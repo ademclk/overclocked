@@ -12,6 +12,7 @@ enum State {
 	RESULTS,
 }
 
+
 ## Returns human-readable state name
 static func to_string_name(state: State) -> String:
 	match state:

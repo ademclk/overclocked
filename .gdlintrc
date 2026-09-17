@@ -1,0 +1,9 @@
+excluded_directories:
+  - .git
+  - addons
+  - .godot
+max-line-length: 100
+max-file-lines: 1000
+max-returns: 10
+max-public-methods: 30
+tab-characters: 1

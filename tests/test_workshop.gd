@@ -2,6 +2,7 @@ extends Node
 
 ## Test suite for Workshop_Debug.tscn and workshop_debug.gd.
 
+
 func _ready() -> void:
 	print("--- RUNNING WORKSHOP_DEBUG TESTS ---")
 
@@ -47,15 +48,19 @@ func _ready() -> void:
 	assert(is_equal_approx(bench.size.y, Constants.WORKBENCH_SIZE.y), "Workbench height mismatch")
 	assert(is_equal_approx(bench.size.z, Constants.WORKBENCH_SIZE.z), "Workbench depth mismatch")
 	# Check collision layer includes stations (layer 3 bit = 4)
-	assert(bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0, "Workbench must include station collision mask")
+	var has_station_mask: bool = bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0
+	assert(has_station_mask, "Workbench must include station collision mask")
 	print("Workbench station dimensions and collision layer verified")
 
 	# 5. Check Lighting
 	print("Checking overhead workshop light...")
-	var light: DirectionalLight3D = workshop.get_node_or_null("DirectionalLight3D") as DirectionalLight3D
+	var light_node: Node = workshop.get_node_or_null("DirectionalLight3D")
+	var light: DirectionalLight3D = light_node as DirectionalLight3D
 	assert(light != null, "DirectionalLight3D missing from Workshop_Debug")
 	assert(light.shadow_enabled == true, "DirectionalLight3D must have shadows enabled")
-	assert(light.light_color.r > 0.9 and light.light_color.g > 0.9, "Light color should be warm white")
+	assert(
+		light.light_color.r > 0.9 and light.light_color.g > 0.9, "Light color should be warm white"
+	)
 	print("Overhead lighting verified")
 
 	# 6. Check Player Spawn Point

@@ -2,6 +2,7 @@ extends Node
 
 ## Test suite for CameraRig scene and camera_rig.gd script.
 
+
 func _ready() -> void:
 	print("--- RUNNING CAMERA RIG TESTS ---")
 
@@ -36,13 +37,21 @@ func _ready() -> void:
 	# 4. Verify Export Property Modifiers
 	print("Testing export property adjustments...")
 	rig.camera_height = 15.0
-	assert(is_equal_approx(cam.position.y, 15.0), "Updating camera_height should update cam.position.y")
+	assert(
+		is_equal_approx(cam.position.y, 15.0), "Updating camera_height should update cam.position.y"
+	)
 
 	rig.camera_distance = 10.0
-	assert(is_equal_approx(cam.position.z, 10.0), "Updating camera_distance should update cam.position.z")
+	assert(
+		is_equal_approx(cam.position.z, 10.0),
+		"Updating camera_distance should update cam.position.z"
+	)
 
 	rig.camera_angle = -60.0
-	assert(is_equal_approx(cam.rotation_degrees.x, -60.0), "Updating camera_angle should update cam.rotation_degrees.x")
+	assert(
+		is_equal_approx(cam.rotation_degrees.x, -60.0),
+		"Updating camera_angle should update cam.rotation_degrees.x"
+	)
 
 	rig.fov = 45.0
 	assert(is_equal_approx(cam.fov, 45.0), "Updating fov should update cam.fov")
@@ -60,19 +69,28 @@ func _ready() -> void:
 
 	# Frame an offset room from (0, 0, 0) to (10, 0, 8)
 	rig.frame_bounds(Vector3(0.0, 0.0, 0.0), Vector3(10.0, 0.0, 8.0))
-	assert(is_equal_approx(rig.target_offset.x, 5.0), "Target offset X should be center of room (5.0)")
-	assert(is_equal_approx(rig.target_offset.z, 4.0), "Target offset Z should be center of room (4.0)")
+	assert(
+		is_equal_approx(rig.target_offset.x, 5.0), "Target offset X should be center of room (5.0)"
+	)
+	assert(
+		is_equal_approx(rig.target_offset.z, 4.0), "Target offset Z should be center of room (4.0)"
+	)
 	print("Room framing calculations verified")
 
 	# 6. Verify Orthogonal Mode Switching
 	print("Testing projection mode switching...")
 	rig.projection_mode = Camera3D.PROJECTION_ORTHOGONAL
 	rig.orthogonal_size = 14.0
-	assert(cam.projection == Camera3D.PROJECTION_ORTHOGONAL, "Projection should switch to Orthogonal")
+	assert(
+		cam.projection == Camera3D.PROJECTION_ORTHOGONAL, "Projection should switch to Orthogonal"
+	)
 	assert(is_equal_approx(cam.size, 14.0), "Orthogonal size should update to 14.0")
 
 	rig.projection_mode = Camera3D.PROJECTION_PERSPECTIVE
-	assert(cam.projection == Camera3D.PROJECTION_PERSPECTIVE, "Projection should switch back to Perspective")
+	assert(
+		cam.projection == Camera3D.PROJECTION_PERSPECTIVE,
+		"Projection should switch back to Perspective"
+	)
 	print("Projection mode switching verified")
 
 	print("--- ALL CAMERA RIG TESTS PASSED SUCCESSFULLY ---")

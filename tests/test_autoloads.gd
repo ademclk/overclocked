@@ -1,5 +1,6 @@
 extends Node
 
+
 func _ready() -> void:
 	print("--- GAMESTATE AND AUTOLOADS TESTS ---")
 

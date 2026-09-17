@@ -44,8 +44,10 @@ extends Node3D
 
 @onready var camera: Camera3D = $Camera3D
 
+
 func _ready() -> void:
 	_apply_camera_settings()
+
 
 ## Applies exported properties to the child Camera3D node
 func _apply_camera_settings() -> void:
@@ -62,11 +64,13 @@ func _apply_camera_settings() -> void:
 	cam.position = Vector3(0.0, camera_height, camera_distance) + target_offset
 	cam.rotation_degrees = Vector3(camera_angle, 0.0, 0.0)
 
+
 ## Returns the active Camera3D child
 func get_camera() -> Camera3D:
 	if not camera:
 		camera = get_node_or_null("Camera3D") as Camera3D
 	return camera
+
 
 ## Makes the child Camera3D the current active viewport camera
 func make_current() -> void:
@@ -74,9 +78,11 @@ func make_current() -> void:
 	if cam:
 		cam.make_current()
 
+
 ## Centers camera framing on a specific workshop position
 func set_target_offset(new_offset: Vector3) -> void:
 	target_offset = new_offset
+
 
 ## Calculates center offset from room bounding box corners
 func frame_bounds(min_point: Vector3, max_point: Vector3) -> void:

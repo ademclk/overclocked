@@ -2,6 +2,7 @@ extends Node
 
 ## Test suite for Input Map configuration and InputHelper utility.
 
+
 func _ready() -> void:
 	print("--- RUNNING INPUT SYSTEM & INPUT_HELPER TESTS ---")
 
@@ -26,8 +27,14 @@ func _ready() -> void:
 		var events: Array[InputEvent] = InputMap.action_get_events(action)
 		assert(not events.is_empty(), "Action has no events: %s" % action)
 		var deadzone: float = InputMap.action_get_deadzone(action)
-		assert(is_equal_approx(deadzone, 0.2), "Action %s deadzone is %f, expected 0.2" % [action, deadzone])
-		print("  ✓ Action verified: %s (events: %d, deadzone: %.1f)" % [action, events.size(), deadzone])
+		var dz_msg: String = "Action %s deadzone is %f, expected 0.2" % [action, deadzone]
+		assert(is_equal_approx(deadzone, 0.2), dz_msg)
+		print(
+			(
+				"  ✓ Action verified: %s (events: %d, deadzone: %.1f)"
+				% [action, events.size(), deadzone]
+			)
+		)
 
 	# 2. Check Specific Event Mappings for Actions
 	_test_action_events()
@@ -43,6 +50,7 @@ func _ready() -> void:
 
 	print("--- ALL INPUT TESTS PASSED SUCCESSFULLY ---")
 	get_tree().quit(0)
+
 
 func _test_action_events() -> void:
 	print("Checking action event bindings...")
@@ -68,7 +76,9 @@ func _test_action_events() -> void:
 	# move_right
 	var right_events := InputMap.action_get_events(InputHelper.ACTION_MOVE_RIGHT)
 	assert(_has_key(right_events, KEY_D), "move_right missing D key")
-	assert(_has_joy_motion(right_events, JOY_AXIS_LEFT_X, 1.0), "move_right missing Left Stick Right")
+	assert(
+		_has_joy_motion(right_events, JOY_AXIS_LEFT_X, 1.0), "move_right missing Left Stick Right"
+	)
 	assert(_has_joy_button(right_events, JOY_BUTTON_DPAD_RIGHT), "move_right missing DPad Right")
 
 	# interact
@@ -97,6 +107,7 @@ func _test_action_events() -> void:
 
 	print("  ✓ Event bindings validated")
 
+
 func _test_movement_vectors() -> void:
 	print("Checking InputHelper movement vector calculations...")
 	var vec2 := InputHelper.get_movement_vector()
@@ -109,42 +120,59 @@ func _test_movement_vectors() -> void:
 	assert(InputHelper.is_moving() == false, "is_moving() should be false when idle")
 	print("  ✓ Movement vector helpers validated")
 
+
 func _test_device_detection_and_prompts() -> void:
 	print("Checking InputHelper device detection and UI prompts...")
 	assert(InputHelper.get_device_type_name(InputHelper.DeviceType.KEYBOARD) == "Keyboard & Mouse")
 	assert(InputHelper.get_device_type_name(InputHelper.DeviceType.XBOX) == "Xbox Controller")
-	assert(InputHelper.get_device_type_name(InputHelper.DeviceType.PLAYSTATION) == "PlayStation Controller")
-	assert(InputHelper.get_device_type_name(InputHelper.DeviceType.NINTENDO) == "Nintendo Switch Controller")
+	assert(
+		(
+			InputHelper.get_device_type_name(InputHelper.DeviceType.PLAYSTATION)
+			== "PlayStation Controller"
+		)
+	)
+	assert(
+		(
+			InputHelper.get_device_type_name(InputHelper.DeviceType.NINTENDO)
+			== "Nintendo Switch Controller"
+		)
+	)
 
 	# Prompts for interact
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT, InputHelper.DeviceType.KEYBOARD) == "[E]")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT, InputHelper.DeviceType.XBOX) == "(A)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT, InputHelper.DeviceType.PLAYSTATION) == "(✕)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT, InputHelper.DeviceType.NINTENDO) == "(B)")
+	var act_interact: StringName = InputHelper.ACTION_INTERACT
+	assert(InputHelper.get_action_prompt(act_interact, InputHelper.DeviceType.KEYBOARD) == "[E]")
+	assert(InputHelper.get_action_prompt(act_interact, InputHelper.DeviceType.XBOX) == "(A)")
+	assert(InputHelper.get_action_prompt(act_interact, InputHelper.DeviceType.PLAYSTATION) == "(✕)")
+	assert(InputHelper.get_action_prompt(act_interact, InputHelper.DeviceType.NINTENDO) == "(B)")
 
 	# Prompts for pick_up
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PICK_UP, InputHelper.DeviceType.KEYBOARD) == "[F]")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PICK_UP, InputHelper.DeviceType.XBOX) == "(X)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PICK_UP, InputHelper.DeviceType.PLAYSTATION) == "(□)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PICK_UP, InputHelper.DeviceType.NINTENDO) == "(Y)")
+	var act_pickup: StringName = InputHelper.ACTION_PICK_UP
+	assert(InputHelper.get_action_prompt(act_pickup, InputHelper.DeviceType.KEYBOARD) == "[F]")
+	assert(InputHelper.get_action_prompt(act_pickup, InputHelper.DeviceType.XBOX) == "(X)")
+	assert(InputHelper.get_action_prompt(act_pickup, InputHelper.DeviceType.PLAYSTATION) == "(□)")
+	assert(InputHelper.get_action_prompt(act_pickup, InputHelper.DeviceType.NINTENDO) == "(Y)")
 
 	# Prompts for drop
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_DROP, InputHelper.DeviceType.KEYBOARD) == "[G]")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_DROP, InputHelper.DeviceType.XBOX) == "(B)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_DROP, InputHelper.DeviceType.PLAYSTATION) == "(○)")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_DROP, InputHelper.DeviceType.NINTENDO) == "(A)")
+	var act_drop: StringName = InputHelper.ACTION_DROP
+	assert(InputHelper.get_action_prompt(act_drop, InputHelper.DeviceType.KEYBOARD) == "[G]")
+	assert(InputHelper.get_action_prompt(act_drop, InputHelper.DeviceType.XBOX) == "(B)")
+	assert(InputHelper.get_action_prompt(act_drop, InputHelper.DeviceType.PLAYSTATION) == "(○)")
+	assert(InputHelper.get_action_prompt(act_drop, InputHelper.DeviceType.NINTENDO) == "(A)")
 
 	# Prompts for pause
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PAUSE, InputHelper.DeviceType.KEYBOARD) == "[Esc]")
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_PAUSE, InputHelper.DeviceType.XBOX) == "[Start]")
+	var act_pause: StringName = InputHelper.ACTION_PAUSE
+	assert(InputHelper.get_action_prompt(act_pause, InputHelper.DeviceType.KEYBOARD) == "[Esc]")
+	assert(InputHelper.get_action_prompt(act_pause, InputHelper.DeviceType.XBOX) == "[Start]")
 
 	# Prompts for debug_reload
-	assert(InputHelper.get_action_prompt(InputHelper.ACTION_DEBUG_RELOAD, InputHelper.DeviceType.KEYBOARD) == "[F5]")
+	var act_reload: StringName = InputHelper.ACTION_DEBUG_RELOAD
+	assert(InputHelper.get_action_prompt(act_reload, InputHelper.DeviceType.KEYBOARD) == "[F5]")
 
 	# Device detection with negative device index should return KEYBOARD
 	assert(InputHelper.detect_device_type(-1) == InputHelper.DeviceType.KEYBOARD)
 
 	print("UI prompts and device mapping validated")
+
 
 func _test_input_simulation() -> void:
 	print("Testing live input parsing...")
@@ -156,7 +184,8 @@ func _test_input_simulation() -> void:
 	Input.parse_input_event(key_press)
 	Input.flush_buffered_events()
 
-	assert(Input.is_action_pressed(InputHelper.ACTION_INTERACT), "Simulated E key press did not trigger interact")
+	var is_interact_action: bool = Input.is_action_pressed(InputHelper.ACTION_INTERACT)
+	assert(is_interact_action, "Simulated E key press did not trigger interact")
 	assert(InputHelper.is_interact_pressed(), "InputHelper.is_interact_pressed() returned false")
 
 	# Release Keyboard E
@@ -166,7 +195,9 @@ func _test_input_simulation() -> void:
 	Input.parse_input_event(key_release)
 	Input.flush_buffered_events()
 
-	assert(not Input.is_action_pressed(InputHelper.ACTION_INTERACT), "Simulated E key release failed")
+	assert(
+		not Input.is_action_pressed(InputHelper.ACTION_INTERACT), "Simulated E key release failed"
+	)
 
 	# Simulate Gamepad Start button press
 	var joy_press := InputEventJoypadButton.new()
@@ -176,7 +207,8 @@ func _test_input_simulation() -> void:
 	Input.parse_input_event(joy_press)
 	Input.flush_buffered_events()
 
-	assert(Input.is_action_pressed(InputHelper.ACTION_PAUSE), "Simulated Start button did not trigger pause")
+	var is_pause_action: bool = Input.is_action_pressed(InputHelper.ACTION_PAUSE)
+	assert(is_pause_action, "Simulated Start button did not trigger pause")
 
 	# Release Gamepad Start
 	var joy_release := InputEventJoypadButton.new()
@@ -186,9 +218,10 @@ func _test_input_simulation() -> void:
 	Input.parse_input_event(joy_release)
 	Input.flush_buffered_events()
 
-	assert(not Input.is_action_pressed(InputHelper.ACTION_PAUSE), "Simulated Start button release failed")
+	assert(not Input.is_action_pressed(InputHelper.ACTION_PAUSE), "Simulated Start release failed")
 
 	print("  ✓ Live input simulation passed")
+
 
 # Helper checking functions
 func _has_key(events: Array[InputEvent], key: Key) -> bool:
@@ -199,6 +232,7 @@ func _has_key(events: Array[InputEvent], key: Key) -> bool:
 				return true
 	return false
 
+
 func _has_joy_motion(events: Array[InputEvent], axis: JoyAxis, val: float) -> bool:
 	for ev in events:
 		if ev is InputEventJoypadMotion:
@@ -206,6 +240,7 @@ func _has_joy_motion(events: Array[InputEvent], axis: JoyAxis, val: float) -> bo
 			if iejm.axis == axis and is_equal_approx(iejm.axis_value, val):
 				return true
 	return false
+
 
 func _has_joy_button(events: Array[InputEvent], btn: JoyButton) -> bool:
 	for ev in events:

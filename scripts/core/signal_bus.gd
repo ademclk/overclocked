@@ -6,7 +6,7 @@ extends Node
 # Game Lifecycle Signals
 signal game_state_changed(old_state: GameState.State, new_state: GameState.State)
 signal level_loaded(level_id: String)
-signal level_restarted()
+signal level_restarted
 signal game_paused(is_paused: bool)
 
 # Player Signals
