@@ -23,3 +23,13 @@ signal order_spawned(order_id: String, device_type: String)
 signal order_completed(order_id: String, score: int, stars: int)
 signal order_expired(order_id: String)
 signal device_repaired(device_name: String)
+signal device_state_changed(device_name: String, old_state: String, new_state: String)
+signal diagnosis_revealed(device_name: String, fault_name: String)
+
+# HUD Signals
+signal interaction_prompt_changed(prompt_text: String)
+signal carried_item_changed(item_name: String)
+
+# Round Flow Signals
+signal round_started
+signal round_ended(total_score: int, total_stars: int)

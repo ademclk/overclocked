@@ -24,6 +24,7 @@ var active_players: Array[PlayerCharacter] = []
 @onready var parts_shelf: PartsShelf = get_node_or_null("PartsShelf") as PartsShelf
 @onready var software_station: SoftwareStation = get_node_or_null("SoftwareStation") as SoftwareStation
 @onready var delivery_counter: DeliveryCounter = get_node_or_null("DeliveryCounter") as DeliveryCounter
+@onready var order_manager: OrderManager = get_node_or_null("OrderManager") as OrderManager
 
 
 func _ready() -> void:

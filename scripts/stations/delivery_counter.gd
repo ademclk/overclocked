@@ -7,6 +7,9 @@ extends BaseStation
 signal device_delivered(device: Carriable)
 
 
+@export var order_manager: Node = null
+
+
 func _ready() -> void:
 	station_name = "Delivery Counter"
 	station_type = "delivery"
@@ -44,6 +47,23 @@ func _on_interacted(player: PlayerCharacter) -> void:
 			SignalBus.device_repaired.emit(device.item_name)
 			if device.has_method("deliver"):
 				device.deliver()
+
+			var mgr: OrderManager = order_manager as OrderManager if order_manager is OrderManager else _find_order_manager()
+			if mgr:
+				mgr.complete_order_for_device(device)
+
+
+func _find_order_manager() -> OrderManager:
+	if get_parent():
+		var mgr: Node = get_parent().get_node_or_null("OrderManager")
+		if mgr is OrderManager:
+			return mgr as OrderManager
+	var tree := get_tree()
+	if tree:
+		var managers: Array[Node] = tree.get_nodes_in_group("order_managers")
+		if not managers.is_empty() and managers[0] is OrderManager:
+			return managers[0] as OrderManager
+	return null
 
 
 func can_accept_device(device: Carriable) -> bool:

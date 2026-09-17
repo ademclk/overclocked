@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="OrderData" format=3]
+
+[ext_resource type="Resource" path="res://resources/devices/phone.tres" id="1_dev"]
+[ext_resource type="Resource" path="res://resources/faults/phone_cracked_screen.tres" id="2_fault"]
+[ext_resource type="Script" path="res://resources/orders/order_data.gd" id="3_order"]
+
+[resource]
+script = ExtResource("3_order")
+order_id = "order_phone_001"
+device_data = ExtResource("1_dev")
+specific_fault = ExtResource("2_fault")
+custom_time_limit = 60.0
+base_score = 100
+three_star_threshold = 0.5
+two_star_threshold = 0.2
+customer_name = "Alex"
