@@ -1,7 +1,7 @@
 extends Node
 
 func _ready() -> void:
-	print("--- Running Phase 0.2 Verification ---")
+	print("--- GAMESTATE AND AUTOLOADS TESTS ---")
 
 	# 1. Test GameState
 	print("Checking GameState...")
@@ -43,5 +43,5 @@ func _ready() -> void:
 	GameManager.toggle_pause()
 	assert(GameManager.current_state == GameState.State.PLAYING)
 
-	print("--- ALL PHASE 0.2 CHECKS PASSED SUCCESSFULLY ---")
+	print("--- CHECKS PASSED SUCCESSFULLY ---")
 	get_tree().quit(0)
