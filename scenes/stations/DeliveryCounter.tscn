@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/stations/BaseStation.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/stations/delivery_counter.gd" id="2_script"]
+[ext_resource type="Material" path="res://resources/materials/mat_station_delivery.tres" id="3_mat"]
+
+[node name="DeliveryCounter" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+station_name = "Delivery Counter"
+station_type = "delivery"
+
+[node name="MeshInstance3D" parent="StationMesh" index="0"]
+material_override = ExtResource("3_mat")
+
+[node name="StationLabel" parent="." index="5"]
+text = "DELIVERY COUNTER"

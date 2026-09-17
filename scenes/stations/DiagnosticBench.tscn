@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/stations/BaseStation.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/stations/diagnostic_bench.gd" id="2_script"]
+[ext_resource type="Material" path="res://resources/materials/mat_station_diagnostic.tres" id="3_mat"]
+
+[node name="DiagnosticBench" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+diagnosis_time = 2.0
+station_name = "Diagnostic Bench"
+station_type = "diagnostic"
+
+[node name="MeshInstance3D" parent="StationMesh" index="0"]
+material_override = ExtResource("3_mat")
+
+[node name="StationLabel" parent="." index="5"]
+text = "DIAGNOSTIC BENCH"

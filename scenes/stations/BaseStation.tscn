@@ -1,0 +1,60 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/base_station.gd" id="1_base"]
+[ext_resource type="Script" path="res://scripts/stations/station_interaction_zone.gd" id="2_zone"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_body"]
+size = Vector3(1.2, 0.9, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_default"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_default"]
+material = SubResource("StandardMaterial3D_default")
+size = Vector3(1.2, 0.9, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_zone"]
+size = Vector3(1.8, 1.0, 1.2)
+
+[node name="BaseStation" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("1_base")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("BoxShape3D_body")
+
+[node name="StationMesh" type="Node3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StationMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("BoxMesh_default")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_zone")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("BoxShape3D_zone")
+
+[node name="DeviceSlot" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="ProgressIndicator" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+
+[node name="ProgressLabel" type="Label3D" parent="ProgressIndicator"]
+billboard = 1
+font_size = 24
+outline_size = 3
+
+[node name="StationLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+billboard = 1
+text = "STATION"
+font_size = 28
+outline_size = 4

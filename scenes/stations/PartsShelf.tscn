@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/stations/BaseStation.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/stations/parts_shelf.gd" id="2_script"]
+[ext_resource type="Material" path="res://resources/materials/mat_station_parts_shelf.tres" id="3_mat"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shelf_body"]
+size = Vector3(1, 1.5, 0.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_shelf"]
+material = ExtResource("3_mat")
+size = Vector3(1, 1.5, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_shelf_zone"]
+size = Vector3(1.6, 1.6, 1)
+
+[node name="PartsShelf" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+dispensed_part_name = "Replacement Part"
+dispensed_part_type = "part"
+station_name = "Parts Shelf"
+station_type = "shelf"
+
+[node name="CollisionShape3D" parent="." index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("BoxShape3D_shelf_body")
+
+[node name="MeshInstance3D" parent="StationMesh" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+material_override = ExtResource("3_mat")
+mesh = SubResource("BoxMesh_shelf")
+
+[node name="InteractionZone" parent="." index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="CollisionShape3D" parent="InteractionZone" index="0"]
+shape = SubResource("BoxShape3D_shelf_zone")
+
+[node name="ProgressIndicator" parent="." index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+
+[node name="StationLabel" parent="." index="5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 0)
+text = "PARTS SHELF"

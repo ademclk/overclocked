@@ -2,7 +2,7 @@ class_name WorkshopDebug
 extends Node3D
 
 ## Placeholder debug workshop level for Overclocked.
-## Provides room geometry, collision boundaries, workbench station, lighting, and spawn markers.
+## Provides room geometry, collision boundaries, workshop stations, lighting, and spawn markers.
 
 const DEFAULT_PLAYER_SCENE: PackedScene = preload("res://scenes/characters/PlayerCharacter.tscn")
 
@@ -13,8 +13,17 @@ var active_players: Array[PlayerCharacter] = []
 
 @onready var spawn_point_p1: Marker3D = $SpawnPoint_P1
 @onready var floor_node: CSGBox3D = $Floor
-@onready var workbench: CSGBox3D = $Workbench
 @onready var directional_light: DirectionalLight3D = $DirectionalLight3D
+
+# Station references
+@onready var reception_desk: ReceptionDesk = get_node_or_null("ReceptionDesk") as ReceptionDesk
+@onready var diagnostic_bench: DiagnosticBench = get_node_or_null("DiagnosticBench") as DiagnosticBench
+@onready var workbench: Node3D = (
+	get_node_or_null("Workbench") if has_node("Workbench") else get_node_or_null("WorkbenchStation")
+)
+@onready var parts_shelf: PartsShelf = get_node_or_null("PartsShelf") as PartsShelf
+@onready var software_station: SoftwareStation = get_node_or_null("SoftwareStation") as SoftwareStation
+@onready var delivery_counter: DeliveryCounter = get_node_or_null("DeliveryCounter") as DeliveryCounter
 
 
 func _ready() -> void:
@@ -46,7 +55,7 @@ func get_player(player_index: int = 0) -> PlayerCharacter:
 func get_spawn_position(_player_index: int = 0) -> Vector3:
 	if spawn_point_p1:
 		return spawn_point_p1.global_position
-	return Vector3(1.5, 0.0, 1.5)
+	return Vector3(1.5, 0.0, 3.0)
 
 
 ## Returns the workshop floor dimensions in meters (X = width, Y = depth).
@@ -60,12 +69,36 @@ func get_room_size() -> Vector2:
 func get_workbench_position() -> Vector3:
 	if workbench:
 		return workbench.global_position
-	return Vector3(-2.0, 0.45, -1.5)
+	return Vector3(-2.6, 0.0, 0.5)
+
+
+## Returns a station by its type or name
+func get_station(station_type_or_name: String) -> BaseStation:
+	var query := station_type_or_name.to_lower().strip_edges()
+	for child in get_children():
+		if child is BaseStation:
+			if (
+				child.station_type.to_lower() == query
+				or child.station_name.to_lower() == query
+				or child.name.to_lower() == query
+			):
+				return child
+	return null
+
+
+## Returns all BaseStation nodes present in the workshop
+func get_all_stations() -> Array[BaseStation]:
+	var stations: Array[BaseStation] = []
+	for child in get_children():
+		if child is BaseStation:
+			stations.append(child)
+	return stations
 
 
 ## Returns the bounding box (AABB) of the workshop floor.
 func get_room_bounds() -> AABB:
 	var size_2d: Vector2 = get_room_size()
 	return AABB(
-		Vector3(-size_2d.x * 0.5, 0.0, -size_2d.y * 0.5), Vector3(size_2d.x, 2.5, size_2d.y)
+		Vector3(-size_2d.x * 0.5, 0.0, -size_2d.y * 0.5),
+		Vector3(size_2d.x, 2.5, size_2d.y)
 	)

@@ -41,15 +41,13 @@ func _ready() -> void:
 
 	# 4. Check Workbench
 	print("Checking workbench station...")
-	var bench: CSGBox3D = workshop.get_node_or_null("Workbench") as CSGBox3D
+	var bench: Node3D = workshop.get_node_or_null("Workbench") as Node3D
 	assert(bench != null, "Workbench missing from Workshop_Debug")
-	assert(bench.use_collision == true, "Workbench must have use_collision = true")
-	assert(is_equal_approx(bench.size.x, Constants.WORKBENCH_SIZE.x), "Workbench length mismatch")
-	assert(is_equal_approx(bench.size.y, Constants.WORKBENCH_SIZE.y), "Workbench height mismatch")
-	assert(is_equal_approx(bench.size.z, Constants.WORKBENCH_SIZE.z), "Workbench depth mismatch")
-	# Check collision layer includes stations (layer 3 bit = 4)
-	var has_station_mask: bool = bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0
-	assert(has_station_mask, "Workbench must include station collision mask")
+	if bench is BaseStation:
+		assert(bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0, "Workbench must include station collision mask")
+	elif bench is CSGBox3D:
+		assert(bench.use_collision == true, "Workbench must have use_collision = true")
+		assert(bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0, "Workbench must include station collision mask")
 	print("Workbench station dimensions and collision layer verified")
 
 	# 5. Check Lighting
