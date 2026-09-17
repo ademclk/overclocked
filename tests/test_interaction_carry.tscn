@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/test_interaction_carry.gd" id="1_tic"]
+
+[node name="TestInteractionCarry" type="Node"]
+script = ExtResource("1_tic")

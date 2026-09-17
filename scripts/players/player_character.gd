@@ -24,8 +24,8 @@ var _input_direction: Vector3 = Vector3.ZERO
 var _distance_since_last_footstep: float = 0.0
 
 # References populated dynamically or wired in 1B
-var interaction_system: Node = null
-var carry_system: Node = null
+var interaction_system: InteractionSystem = null
+var carry_system: CarrySystem = null
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var character_model: Node3D = $CharacterModel

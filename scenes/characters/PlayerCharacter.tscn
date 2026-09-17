@@ -1,6 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/players/player_character.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/players/interaction_system.gd" id="2_interact"]
+[ext_resource type="Script" path="res://scripts/players/carry_system.gd" id="3_carry"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_char"]
 radius = 0.3
@@ -65,3 +67,9 @@ billboard = 1
 text = "P1"
 font_size = 32
 outline_size = 4
+
+[node name="InteractionSystem" type="Node" parent="."]
+script = ExtResource("2_interact")
+
+[node name="CarrySystem" type="Node" parent="."]
+script = ExtResource("3_carry")
