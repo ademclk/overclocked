@@ -40,7 +40,44 @@ func _process(_delta: float) -> void:
 func _update_debug_label() -> void:
 	var state_name: String = GameState.to_string_name(GameManager.current_state)
 	var fps: int = Engine.get_frames_per_second()
-	debug_label.text = "Phase 0 — Overclocked | State: %s | FPS: %d" % [state_name, fps]
+
+	var order_info: String = "None"
+	var device_state_info: String = "None"
+	var carried_info: String = "Empty"
+
+	if current_level:
+		var order_mgr: OrderManager = null
+		if "order_manager" in current_level and current_level.order_manager:
+			order_mgr = current_level.order_manager
+		elif current_level.has_node("OrderManager"):
+			order_mgr = current_level.get_node("OrderManager") as OrderManager
+
+		if order_mgr and order_mgr.has_active_orders():
+			var ord: Order = order_mgr.get_first_active_order()
+			order_info = "%s (%.0fs)" % [ord.get_device_name(), ord.time_remaining]
+			if ord.device_instance:
+				device_state_info = ord.device_instance.get_repair_state()
+				if ord.device_instance.is_diagnosed and ord.assigned_fault:
+					device_state_info += " (%s)" % ord.assigned_fault.fault_name
+
+		var player: PlayerCharacter = null
+		if current_level.has_method("get_player"):
+			player = current_level.call("get_player", 0)
+		elif current_level.has_node("Entities/PlayerCharacter"):
+			player = current_level.get_node("Entities/PlayerCharacter") as PlayerCharacter
+		elif current_level.has_node("PlayerCharacter"):
+			player = current_level.get_node("PlayerCharacter") as PlayerCharacter
+
+		if player and player.carry_system and player.carry_system.is_carrying():
+			var item: Carriable = player.carry_system.get_held_item()
+			if item:
+				carried_info = item.item_name
+				if item is Device:
+					carried_info += " [%s]" % item.get_repair_state()
+
+	debug_label.text = "Phase 0 — Overclocked (Phase 1) | State: %s | FPS: %d\nOrder: %s | Device: %s | Carried: %s" % [
+		state_name, fps, order_info, device_state_info, carried_info
+	]
 
 
 ## Loads a new workshop level scene as a child node, replacing any existing level

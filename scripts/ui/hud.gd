@@ -446,8 +446,12 @@ func _on_bus_order_spawned(_order_id: String, _device_type: String) -> void:
 
 
 func _on_bus_order_completed(_order_id: String, score: int, stars: int) -> void:
-	_update_score_display(current_score + score)
-	_update_star_display(current_stars + stars)
+	if _order_manager:
+		_update_score_display(_order_manager.total_score)
+		_update_star_display(_order_manager.total_stars)
+	else:
+		_update_score_display(current_score + score)
+		_update_star_display(current_stars + stars)
 	show_order_completed_animation(stars, score)
 
 

@@ -41,7 +41,11 @@ func _ready() -> void:
 
 	# 4. Check Workbench
 	print("Checking workbench station...")
-	var bench: Node3D = workshop.get_node_or_null("Workbench") as Node3D
+	var bench: Node3D = (
+		workshop.get_node_or_null("Stations/Workbench") as Node3D
+		if workshop.has_node("Stations/Workbench")
+		else workshop.get_node_or_null("Workbench") as Node3D
+	)
 	assert(bench != null, "Workbench missing from Workshop_Debug")
 	if bench is BaseStation:
 		assert(bench.collision_layer & Constants.COLLISION_MASK_STATIONS != 0, "Workbench must include station collision mask")
