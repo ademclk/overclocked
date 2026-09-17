@@ -14,6 +14,11 @@ config/name="Overclocked"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+SignalBus="*res://scripts/core/signal_bus.gd"
+GameManager="*res://scripts/core/game_manager.gd"
+
 [display]
 
 window/stretch/mode="canvas_items"
