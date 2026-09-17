@@ -34,6 +34,9 @@ const COLLISION_MASK_ITEMS: int = 1 << (COLLISION_LAYER_ITEMS - 1)
 const COLLISION_LAYER_HAZARDS: int = 5
 const COLLISION_MASK_HAZARDS: int = 1 << (COLLISION_LAYER_HAZARDS - 1)
 
+# Input Configuration
+const DEFAULT_ANALOG_DEADZONE: float = 0.2
+
 # Gameplay Defaults
 const DEFAULT_INTERACTION_DISTANCE: float = 1.6
 const DEFAULT_PLAYER_MOVE_SPEED: float = 6.0
