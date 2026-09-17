@@ -11,6 +11,10 @@ func _ready() -> void:
 	super._ready()
 
 
+func can_accept_device(_device: Carriable) -> bool:
+	return false
+
+
 func can_player_interact(player: PlayerCharacter) -> bool:
 	return (
 		placed_device != null

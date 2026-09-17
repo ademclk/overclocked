@@ -22,6 +22,7 @@ var installed_component: ComponentData = null
 
 
 func _ready() -> void:
+	add_to_group("devices")
 	item_type = "device"
 	if device_data:
 		item_name = device_data.device_name

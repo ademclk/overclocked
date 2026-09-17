@@ -67,6 +67,7 @@ func _physics_process(delta: float) -> void:
 	if _is_processing:
 		_processing_timer += delta
 		_update_progress_indicator()
+		_apply_processing_wobble()
 		if _processing_timer >= processing_time:
 			_complete_processing()
 
@@ -99,6 +100,7 @@ func accept_device(device: Carriable) -> void:
 
 func remove_device() -> Carriable:
 	var device: Carriable = placed_device
+	_reset_processing_wobble()
 	placed_device = null
 	_is_processing = false
 	_processing_timer = 0.0
@@ -108,6 +110,10 @@ func remove_device() -> Carriable:
 		device_slot.remove_child(device)
 	elif device and device.get_parent() == self:
 		remove_child(device)
+
+	if device:
+		device.position = Vector3.ZERO
+		device.rotation = Vector3.ZERO
 
 	_update_visual_state()
 	device_removed.emit(device)
@@ -125,10 +131,23 @@ func start_processing() -> void:
 
 func _complete_processing() -> void:
 	_is_processing = false
+	_reset_processing_wobble()
 	current_state = StationState.COMPLETE
 	_update_visual_state()
 	_on_processing_done()
 	processing_completed.emit(placed_device)
+
+
+func _apply_processing_wobble() -> void:
+	if placed_device and is_instance_valid(placed_device):
+		var wobble_y: float = sin(_processing_timer * 18.0) * 0.015
+		placed_device.position.y = wobble_y
+
+
+func _reset_processing_wobble() -> void:
+	if placed_device and is_instance_valid(placed_device):
+		placed_device.position = Vector3.ZERO
+		placed_device.rotation = Vector3.ZERO
 
 
 func get_progress() -> float:

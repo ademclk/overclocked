@@ -71,9 +71,19 @@ func _on_processing_done() -> void:
 			placed_device.advance_repair_state()
 
 
+func can_accept_device(device: Carriable) -> bool:
+	return super.can_accept_device(device) and _is_valid_device_state(device)
+
+
 func _is_valid_device_state(device: Carriable) -> bool:
 	if device == null:
 		return false
+	if device is Device:
+		var dev := device as Device
+		return dev.current_repair_state in [
+			RepairState.State.REASSEMBLED,
+			RepairState.State.SOFTWARE_INSTALLED,
+		]
 	if device.has_method("get_repair_state"):
 		return str(device.get_repair_state()) in ["REASSEMBLED", "SOFTWARE_INSTALLED"]
-	return true
+	return device.item_type == "device"

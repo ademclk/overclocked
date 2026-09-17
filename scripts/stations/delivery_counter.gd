@@ -46,10 +46,16 @@ func _on_interacted(player: PlayerCharacter) -> void:
 				device.deliver()
 
 
+func can_accept_device(device: Carriable) -> bool:
+	return super.can_accept_device(device) and _is_valid_delivery_device(device)
+
+
 func _is_valid_delivery_device(device: Carriable) -> bool:
 	if device == null:
 		return false
+	if device is Device:
+		return (device as Device).current_repair_state == RepairState.State.TESTED
 	if device.has_method("get_repair_state"):
 		return str(device.get_repair_state()) == "TESTED"
-	# Fallback before Phase 1D device system is wired
-	return true
+	# Fallback for generic Carriable in station unit tests
+	return device.item_type == "device"
