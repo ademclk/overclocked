@@ -4,6 +4,7 @@
 [ext_resource type="Environment" path="res://resources/default_env.tres" id="2_hptm8"]
 [ext_resource type="PackedScene" path="res://scenes/main/CameraRig.tscn" id="3_v8ekm"]
 [ext_resource type="PackedScene" path="res://scenes/workshop/Workshop_Debug.tscn" id="4_n4mpe"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="5_hud"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_w8n1l")
@@ -24,3 +25,5 @@ offset_top = 16.0
 offset_right = 500.0
 offset_bottom = 60.0
 text = "Phase 0 — OVERclocked"
+
+[node name="HUD" parent="UI" instance=ExtResource("5_hud")]

@@ -15,6 +15,7 @@ var current_level: Node = null
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var ui: CanvasLayer = $UI
 @onready var debug_label: Label = $UI/DebugLabel
+@onready var hud: HUD = $UI.get_node_or_null("HUD") as HUD
 
 
 func _ready() -> void:
@@ -27,6 +28,7 @@ func _ready() -> void:
 		GameManager.change_state(GameState.State.PLAYING)
 
 	_setup_camera()
+	_setup_hud()
 	_update_debug_label()
 
 
@@ -54,6 +56,7 @@ func load_level(level_scene: PackedScene) -> void:
 		current_level.name = "Workshop"
 		add_child(current_level)
 		_setup_camera()
+		_setup_hud()
 		SignalBus.level_loaded.emit(String(current_level.name))
 
 
@@ -76,6 +79,27 @@ func _setup_camera() -> void:
 	if current_level and current_level.has_method("get_room_bounds"):
 		var bounds: AABB = current_level.call("get_room_bounds")
 		camera_rig.frame_bounds(bounds.position, bounds.position + bounds.size)
+
+
+func _setup_hud() -> void:
+	if not hud:
+		return
+	var player: PlayerCharacter = null
+	var order_mgr: OrderManager = null
+	if current_level:
+		if current_level.has_method("get_player"):
+			player = current_level.call("get_player", 0)
+		elif current_level.has_node("Entities/PlayerCharacter"):
+			player = current_level.get_node("Entities/PlayerCharacter") as PlayerCharacter
+		elif current_level.has_node("PlayerCharacter"):
+			player = current_level.get_node("PlayerCharacter") as PlayerCharacter
+
+		if "order_manager" in current_level and current_level.order_manager:
+			order_mgr = current_level.order_manager
+		elif current_level.has_node("OrderManager"):
+			order_mgr = current_level.get_node("OrderManager") as OrderManager
+
+	hud.setup(player, order_mgr)
 
 
 func _unhandled_input(event: InputEvent) -> void:
