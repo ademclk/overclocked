@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DeviceData" format=3]
+
+[ext_resource type="Resource" path="res://resources/faults/phone_cracked_screen.tres" id="1_fault_screen"]
+[ext_resource type="Resource" path="res://resources/faults/phone_dead_battery.tres" id="2_fault_battery"]
+[ext_resource type="Resource" path="res://resources/faults/phone_software_crash.tres" id="3_fault_software"]
+[ext_resource type="Script" path="res://resources/devices/device_data.gd" id="4_dev"]
+
+[resource]
+script = ExtResource("4_dev")
+device_name = "Phone"
+device_id = "phone"
+description = "Standard smartphone model prone to screen fractures, battery degradation, and OS crashes."
+possible_faults = [ExtResource("1_fault_screen"), ExtResource("2_fault_battery"), ExtResource("3_fault_software")]
+base_repair_time = 60.0
+difficulty_tier = 1
+requires_software = false

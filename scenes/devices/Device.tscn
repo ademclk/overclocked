@@ -1,0 +1,57 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/devices/device.gd" id="1_dev"]
+[ext_resource type="Resource" path="res://resources/devices/phone.tres" id="2_phone_data"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="3_interact"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_phone_body"]
+albedo_color = Color(0.12, 0.15, 0.2, 1)
+metallic = 0.7
+roughness = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_phone"]
+material = SubResource("StandardMaterial3D_phone_body")
+size = Vector3(0.24, 0.04, 0.36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_screen"]
+albedo_color = Color(0.05, 0.08, 0.12, 1)
+roughness = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_screen"]
+material = SubResource("StandardMaterial3D_screen")
+size = Vector3(0.2, 0.01, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pickup_zone"]
+size = Vector3(0.8, 0.5, 0.8)
+
+[node name="Device" type="Node3D"]
+script = ExtResource("1_dev")
+device_data = ExtResource("2_phone_data")
+item_name = "Phone"
+item_type = "device"
+
+[node name="DeviceMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_phone")
+
+[node name="ScreenMesh" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_screen")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("3_interact")
+interaction_prompt = "Pick Up Phone"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("BoxShape3D_pickup_zone")
+
+[node name="DeviceLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+billboard = 1
+text = "Phone
+[RECEIVED]"
+font_size = 22
+outline_size = 3

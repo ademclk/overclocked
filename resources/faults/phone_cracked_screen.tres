@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/screen.tres" id="1_comp"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="2_fault"]
+
+[resource]
+script = ExtResource("2_fault")
+fault_name = "Cracked Screen"
+fault_id = "phone_cracked_screen"
+symptom_description = "The glass digitizer is shattered and the touch sensor is unresponsive."
+broken_component = ExtResource("1_comp")
+diagnosis_time = 2.0
+repair_time = 3.0
+requires_software_reinstall = false
