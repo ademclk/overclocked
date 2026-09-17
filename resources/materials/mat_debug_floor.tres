@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/materials/grid_floor.png" id="1_hl57h"]
+
+[resource]
+albedo_texture = ExtResource("1_hl57h")
+roughness = 0.8
+uv1_scale = Vector3(10, 10, 1)

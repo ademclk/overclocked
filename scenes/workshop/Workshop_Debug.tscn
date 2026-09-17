@@ -1,0 +1,68 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/workshop/workshop_debug.gd" id="1_rw8pc"]
+[ext_resource type="Texture2D" path="res://assets/textures/materials/grid_floor.png" id="2_kp5f6"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_va5xn"]
+albedo_texture = ExtResource("2_kp5f6")
+roughness = 0.8
+uv1_scale = Vector3(10, 10, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c06kd"]
+albedo_color = Color(0.24, 0.28, 0.35, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ks40f"]
+albedo_color = Color(0.72, 0.48, 0.26, 1)
+roughness = 0.6
+
+[node name="Workshop_Debug" type="Node3D" unique_id=1191061765]
+script = ExtResource("1_rw8pc")
+
+[node name="Floor" type="CSGBox3D" parent="." unique_id=1907106396]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+use_collision = true
+size = Vector3(10, 0.4, 10)
+material = SubResource("StandardMaterial3D_va5xn")
+
+[node name="Walls" type="Node3D" parent="." unique_id=562571017]
+
+[node name="WallNorth" type="CSGBox3D" parent="Walls" unique_id=1920155487]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.2)
+use_collision = true
+size = Vector3(10.4, 2, 0.4)
+material = SubResource("StandardMaterial3D_c06kd")
+
+[node name="WallSouth" type="CSGBox3D" parent="Walls" unique_id=1950765470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 5.2)
+use_collision = true
+size = Vector3(10.4, 1.2, 0.4)
+material = SubResource("StandardMaterial3D_c06kd")
+
+[node name="WallWest" type="CSGBox3D" parent="Walls" unique_id=566355960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 1, 0)
+use_collision = true
+size = Vector3(0.4, 2, 10.4)
+material = SubResource("StandardMaterial3D_c06kd")
+
+[node name="WallEast" type="CSGBox3D" parent="Walls" unique_id=926457171]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 1, 0)
+use_collision = true
+size = Vector3(0.4, 2, 10.4)
+material = SubResource("StandardMaterial3D_c06kd")
+
+[node name="Workbench" type="CSGBox3D" parent="." unique_id=1619400594]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.45, -1.5)
+use_collision = true
+collision_layer = 5
+size = Vector3(1.5, 0.9, 0.7)
+material = SubResource("StandardMaterial3D_ks40f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=232698018]
+transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 8, 0)
+light_color = Color(1, 0.96, 0.9, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="SpawnPoint_P1" type="Marker3D" parent="." unique_id=302682733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 1.5)
