@@ -73,6 +73,8 @@ func _setup_tool_visual() -> void:
 			box.size = Vector3(0.04, 0.28, 0.04)
 		"thermal_paste":
 			box.size = Vector3(0.08, 0.12, 0.04)
+		"esd_wrist_strap":
+			box.size = Vector3(0.12, 0.04, 0.12)
 		_:
 			box.size = Vector3(0.06, 0.2, 0.06)
 

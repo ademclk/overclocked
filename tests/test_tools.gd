@@ -75,6 +75,29 @@ func test_tool_item_properties_and_visuals() -> int:
 	err += _assert(iron_mesh != null and iron_mesh.mesh is BoxMesh, "Soldering iron created mesh")
 	err += _assert((iron_mesh.mesh as BoxMesh).size.y > 0.25, "Soldering iron has elongated mesh")
 
+	# Test all tool packed scenes
+	var iron_scene: PackedScene = load("res://scenes/tools/SolderingIron.tscn")
+	var paste_scene: PackedScene = load("res://scenes/tools/ThermalPaste.tscn")
+	var esd_scene: PackedScene = load("res://scenes/tools/ESDWristStrap.tscn")
+	err += _assert(iron_scene != null, "SolderingIron.tscn loads successfully")
+	err += _assert(paste_scene != null, "ThermalPaste.tscn loads successfully")
+	err += _assert(esd_scene != null, "ESDWristStrap.tscn loads successfully")
+
+	var iron_inst: ToolItem = iron_scene.instantiate() as ToolItem
+	var paste_inst: ToolItem = paste_scene.instantiate() as ToolItem
+	var esd_inst: ToolItem = esd_scene.instantiate() as ToolItem
+	add_child(iron_inst)
+	add_child(paste_inst)
+	add_child(esd_inst)
+
+	err += _assert(iron_inst.tool_id == "soldering_iron" and iron_inst.item_type == "tool", "SolderingIron scene has tool_id soldering_iron")
+	err += _assert(paste_inst.tool_id == "thermal_paste" and paste_inst.item_type == "tool", "ThermalPaste scene has tool_id thermal_paste")
+	err += _assert(esd_inst.tool_id == "esd_wrist_strap" and esd_inst.item_type == "tool", "ESDWristStrap scene has tool_id esd_wrist_strap")
+
+	iron_inst.queue_free()
+	paste_inst.queue_free()
+	esd_inst.queue_free()
+
 	# Test fall protection safety check: y < -1.0 resets to spawn_position
 	tool.spawn_position = Vector3(1.0, 0.5, 2.0)
 	tool.global_position = Vector3(1.0, -2.5, 2.0)
