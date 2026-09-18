@@ -226,9 +226,9 @@ func get_spawn_position(player_index: int = 0) -> Vector3:
 
 	# Graceful fallback: If SpawnPoint_P1 exists, use as base reference, else default workshop coordinates
 	var p1_marker: Marker3D = get_node_or_null("SpawnPoint_P1") as Marker3D
-	var base_pos: Vector3 = p1_marker.global_position if p1_marker else Vector3(1.5, 0.0, 3.0)
-	var offset_x: float = float(player_index % 2) * 1.0
-	var offset_z: float = float(player_index / 2) * 0.8
+	var base_pos: Vector3 = p1_marker.global_position if p1_marker else Vector3(1.0, 0.0, 3.5)
+	var offset_x: float = float(player_index % 2) * 1.5
+	var offset_z: float = float(player_index / 2) * 1.0
 	return base_pos + Vector3(offset_x, 0.0, offset_z)
 
 
@@ -243,7 +243,7 @@ func get_room_size() -> Vector2:
 func get_workbench_position() -> Vector3:
 	if workbench:
 		return workbench.global_position
-	return Vector3(-2.6, 0.0, 0.5)
+	return Vector3(-4.5, 0.0, 0.5)
 
 
 ## Returns a station by its type or name

@@ -13,7 +13,7 @@
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_va5xn"]
 albedo_texture = ExtResource("2_kp5f6")
 roughness = 0.8
-uv1_scale = Vector3(10, 10, 1)
+uv1_scale = Vector3(16, 12, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c06kd"]
 albedo_color = Color(0.24, 0.28, 0.35, 1)
@@ -25,33 +25,33 @@ script = ExtResource("1_rw8pc")
 [node name="Floor" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
 use_collision = true
-size = Vector3(10, 0.4, 10)
+size = Vector3(16, 0.4, 12)
 material = SubResource("StandardMaterial3D_va5xn")
 
 [node name="Walls" type="Node3D" parent="."]
 
 [node name="WallNorth" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -6.2)
 use_collision = true
-size = Vector3(10.4, 2, 0.4)
+size = Vector3(16.4, 2, 0.4)
 material = SubResource("StandardMaterial3D_c06kd")
 
 [node name="WallSouth" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 5.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 6.2)
 use_collision = true
-size = Vector3(10.4, 1.2, 0.4)
+size = Vector3(16.4, 1.2, 0.4)
 material = SubResource("StandardMaterial3D_c06kd")
 
 [node name="WallWest" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 1, 0)
 use_collision = true
-size = Vector3(0.4, 2, 10.4)
+size = Vector3(0.4, 2, 12.4)
 material = SubResource("StandardMaterial3D_c06kd")
 
 [node name="WallEast" type="CSGBox3D" parent="Walls"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.2, 1, 0)
 use_collision = true
-size = Vector3(0.4, 2, 10.4)
+size = Vector3(0.4, 2, 12.4)
 material = SubResource("StandardMaterial3D_c06kd")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -63,22 +63,22 @@ shadow_enabled = true
 [node name="Stations" type="Node3D" parent="."]
 
 [node name="ReceptionDesk" parent="Stations" instance=ExtResource("3_reception")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -3.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -4.6)
 
 [node name="DeliveryCounter" parent="Stations" instance=ExtResource("4_delivery")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 0, -3.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -4.6)
 
 [node name="DiagnosticBench" parent="Stations" instance=ExtResource("5_diagnostic")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.5)
 
 [node name="Workbench" parent="Stations" instance=ExtResource("6_workbench")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0, 0.5)
 
 [node name="SoftwareStation" parent="Stations" instance=ExtResource("7_software")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 0.5)
 
 [node name="PartsShelf" parent="Stations" instance=ExtResource("8_parts")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 4.2)
 
 [node name="Entities" type="Node3D" parent="."]
 
@@ -86,13 +86,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0, 3.2)
 script = ExtResource("9_order_mgr")
 
 [node name="SpawnPoint_P1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 3.5)
 
 [node name="SpawnPoint_P2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)
 
 [node name="SpawnPoint_P3" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 3.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 4.5)
 
 [node name="SpawnPoint_P4" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 4.5)

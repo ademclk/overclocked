@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/test_camera_tracking.gd" id="1_cam_track_test"]
+
+[node name="TestCameraTracking" type="Node"]
+script = ExtResource("1_cam_track_test")

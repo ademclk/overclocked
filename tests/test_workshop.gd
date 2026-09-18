@@ -19,8 +19,8 @@ func _ready() -> void:
 	var floor_node: CSGBox3D = workshop.get_node_or_null("Floor") as CSGBox3D
 	assert(floor_node != null, "Floor node missing from Workshop_Debug")
 	assert(floor_node.use_collision == true, "Floor must have use_collision = true")
-	assert(is_equal_approx(floor_node.size.x, 10.0), "Floor width should be 10.0")
-	assert(is_equal_approx(floor_node.size.z, 10.0), "Floor depth should be 10.0")
+	assert(is_equal_approx(floor_node.size.x, 16.0), "Floor width should be 16.0")
+	assert(is_equal_approx(floor_node.size.z, 12.0), "Floor depth should be 12.0")
 	# Top surface should be at Y = 0.0: position.y (-0.2) + size.y * 0.5 (0.2) = 0.0
 	var top_surface_y: float = floor_node.position.y + (floor_node.size.y * 0.5)
 	assert(is_equal_approx(top_surface_y, 0.0), "Floor top surface should be at Y = 0.0")
@@ -78,13 +78,13 @@ func _ready() -> void:
 	assert(spawn_pos == spawn.global_position, "get_spawn_position() mismatch")
 
 	var room_size := workshop.get_room_size()
-	assert(room_size == Vector2(10.0, 10.0), "get_room_size() mismatch")
+	assert(room_size == Vector2(16.0, 12.0), "get_room_size() mismatch")
 
 	var bench_pos := workshop.get_workbench_position()
 	assert(bench_pos == bench.global_position, "get_workbench_position() mismatch")
 
 	var bounds := workshop.get_room_bounds()
-	assert(bounds.size.x == 10.0 and bounds.size.z == 10.0, "get_room_bounds() mismatch")
+	assert(bounds.size.x == 16.0 and bounds.size.z == 12.0, "get_room_bounds() mismatch")
 	print("Helper methods verified")
 
 	print("--- ALL WORKSHOP_DEBUG TESTS PASSED SUCCESSFULLY ---")

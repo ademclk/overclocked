@@ -116,6 +116,11 @@ func _setup_camera() -> void:
 	if current_level and current_level.has_method("get_room_bounds"):
 		var bounds: AABB = current_level.call("get_room_bounds")
 		camera_rig.frame_bounds(bounds.position, bounds.position + bounds.size)
+		camera_rig.set_room_bounds(bounds)
+
+	if current_level and current_level.has_method("get_active_players"):
+		camera_rig.set_tracked_players(current_level.call("get_active_players"))
+		camera_rig.snap_to_target()
 
 
 func _setup_hud() -> void:

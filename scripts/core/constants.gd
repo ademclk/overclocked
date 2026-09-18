@@ -7,7 +7,7 @@ extends RefCounted
 const UNIT_SCALE: float = 1.0
 const CHARACTER_HEIGHT: float = 1.8
 const WORKBENCH_SIZE: Vector3 = Vector3(1.5, 0.9, 0.7)
-const DEBUG_ROOM_SIZE: Vector2 = Vector2(10.0, 8.0)
+const DEBUG_ROOM_SIZE: Vector2 = Vector2(16.0, 12.0)
 
 # Player Limits
 const MIN_PLAYERS: int = 1
