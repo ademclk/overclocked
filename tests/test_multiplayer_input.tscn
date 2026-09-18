@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/test_multiplayer_input.gd" id="1_mp_input_test"]
+
+[node name="TestMultiplayerInput" type="Node"]
+script = ExtResource("1_mp_input_test")

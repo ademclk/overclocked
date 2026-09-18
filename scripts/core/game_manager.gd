@@ -10,6 +10,7 @@ var previous_state: GameState.State = GameState.State.MENU
 func _ready() -> void:
 	# Ensure GameManager continues processing even when the game is paused
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	MultiplayerInput.setup_device_listener()
 	set_initial_state(GameState.State.MENU)
 
 

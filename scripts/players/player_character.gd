@@ -49,7 +49,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_input_direction = InputHelper.get_movement_vector_3d()
+	_input_direction = MultiplayerInput.get_movement_vector_3d(player_index)
 	velocity = _input_direction * move_speed
 	move_and_slide()
 	_rotate_toward_direction(delta)

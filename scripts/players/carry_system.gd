@@ -22,7 +22,17 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("drop") and is_carrying():
+	if not player:
+		return
+
+	var player_idx: int = player.player_index
+	var drop_action := MultiplayerInput.action_name(player_idx, MultiplayerInput.BASE_DROP)
+	var is_drop: bool = (
+		event.is_action_pressed(drop_action)
+		or (event is InputEventAction and event.action == &"drop")
+	)
+
+	if is_drop and is_carrying():
 		drop_item()
 		get_viewport().set_input_as_handled()
 

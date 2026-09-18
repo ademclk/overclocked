@@ -29,10 +29,20 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if (
-		(event.is_action_pressed("interact") or event.is_action_pressed("pick_up"))
-		and _current_focus
-	):
+	if not player:
+		return
+
+	var player_idx: int = player.player_index
+	var interact_action := MultiplayerInput.action_name(player_idx, MultiplayerInput.BASE_INTERACT)
+	var pick_up_action := MultiplayerInput.action_name(player_idx, MultiplayerInput.BASE_PICK_UP)
+
+	var is_triggered: bool = (
+		event.is_action_pressed(interact_action)
+		or event.is_action_pressed(pick_up_action)
+		or (event is InputEventAction and (event.action == &"interact" or event.action == &"pick_up"))
+	)
+
+	if is_triggered and _current_focus:
 		if _current_focus.can_interact(player):
 			_current_focus.interact(player)
 			interaction_triggered.emit(_current_focus)
