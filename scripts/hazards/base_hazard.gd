@@ -85,9 +85,9 @@ func _physics_process(delta: float) -> void:
 
 
 ## Begins the warning phase before the hazard activates
-func spawn_with_warning() -> void:
+func spawn_with_warning(custom_duration: float = -1.0) -> void:
 	current_state = HazardState.WARNING
-	_warning_timer = warning_duration
+	_warning_timer = custom_duration if custom_duration > 0.0 else warning_duration
 	visible = true
 	monitoring = false
 	if warning_indicator:

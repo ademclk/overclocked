@@ -343,12 +343,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.ctrl_pressed and event.keycode == KEY_F6:
+			_debug_spawn_priority_order()
+			get_viewport().set_input_as_handled()
+			return
 		if event.ctrl_pressed and event.keycode == KEY_F7:
 			_debug_toggle_tool_requirement()
 			get_viewport().set_input_as_handled()
 			return
 		if event.ctrl_pressed and event.keycode == KEY_F8:
 			_debug_restock_shelf()
+			get_viewport().set_input_as_handled()
+			return
+		if event.shift_pressed and event.keycode == KEY_F12:
+			_debug_spawn_power_surge()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -375,7 +383,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_cycle_debug_focus()
 				get_viewport().set_input_as_handled()
 			KEY_F12:
-				_debug_spawn_random_hazard()
+				_debug_spawn_floor_hazard()
 				get_viewport().set_input_as_handled()
 
 
@@ -508,6 +516,44 @@ func _debug_spawn_order() -> void:
 		var ord: Order = order_manager.spawn_order()
 		if ord:
 			print("[Debug F5] OrderManager created order '%s'" % ord.order_id)
+
+
+func _debug_spawn_priority_order() -> void:
+	if order_spawner and is_instance_valid(order_spawner):
+		var ord: Order = order_spawner.try_spawn_order(true)
+		if ord:
+			print("[Debug Ctrl+F6] Force-spawned priority order '%s' (%s)" % [ord.order_id, ord.get_device_name()])
+		else:
+			print("[Debug Ctrl+F6] Spawner skipped spawn (queue full or max reached).")
+	elif order_manager and is_instance_valid(order_manager):
+		var ord: Order = order_manager.spawn_order()
+		if ord:
+			ord.is_priority = true
+			ord.time_limit *= 0.6
+			ord.time_remaining = ord.time_limit
+			ord.base_score = int(round(float(ord.base_score) * 1.5))
+			print("[Debug Ctrl+F6] OrderManager force-spawned priority order '%s'" % ord.order_id)
+
+
+func _debug_spawn_power_surge() -> void:
+	if hazard_manager and is_instance_valid(hazard_manager):
+		var h: BaseHazard = hazard_manager.try_spawn_hazard("surge")
+		if h:
+			var target_st_name := "Station"
+			if h.has_meta("target_station") and h.get_meta("target_station"):
+				target_st_name = (h.get_meta("target_station") as BaseStation).station_name
+			print("[Debug Shift+F12] Spawned power surge hazard on %s" % target_st_name)
+		else:
+			print("[Debug Shift+F12] HazardManager skipped surge (at max capacity or no eligible station).")
+
+
+func _debug_spawn_floor_hazard() -> void:
+	if hazard_manager and is_instance_valid(hazard_manager):
+		var h: BaseHazard = hazard_manager.try_spawn_hazard("floor")
+		if h:
+			print("[Debug F12] Spawned floor spill hazard (%s) at %v" % [h.hazard_name, h.global_position])
+		else:
+			print("[Debug F12] HazardManager skipped floor hazard (at max capacity).")
 
 
 func _debug_spawn_random_hazard() -> void:

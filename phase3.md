@@ -1498,30 +1498,30 @@ func unpack_at_shelf(shelf: PartsShelf) -> void:
 
 ### Tasks
 
-- [ ] 🎯 Add `OrderSpawner` node to `Workshop_Debug.tscn`
-- [ ] 🎯 Add `HazardManager` node to `Workshop_Debug.tscn`
-- [ ] 🎯 Add `OverheatingHazard` node to `Workshop_Debug.tscn`
-- [ ] 🎯 Create hazard scene files (`FloorSpillHazard.tscn`, `PowerSurgeHazard.tscn`)
-- [ ] 🎯 Create `Screwdriver.tscn` tool scene
-- [ ] 🎯 Wire `OrderSpawner` → `OrderManager` → round flow
-- [ ] 🎯 Wire `HazardManager` → round flow (start/stop)
-- [ ] 🎯 Update `WorkshopDebug.start_round()` to start spawner + hazard manager
-- [ ] 🎯 Add hazard spawn position markers to workshop scene
-- [ ] 🎯 Update HUD for multiple orders display
-- [ ] 🎯 Update `PartsShelf` with stock system
-- [ ] 🎯 Update `WorkbenchStation` with tool requirement
-- [ ] 🎯 Add Phase 3 signals to `SignalBus`
-- [ ] 🎯 Add Phase 3 constants to `Constants`
-- [ ] 🎯 Spawn 2 screwdrivers at round start
-- [ ] 🎯 Test: 3+ orders active simultaneously with independent timers
-- [ ] 🎯 Test: floor spill spawns, slows player, can be cleared
-- [ ] 🎯 Test: power surge disables station, auto-expires or player-clears
-- [ ] 🎯 Test: device overheats on workbench after timeout
-- [ ] 🎯 Test: workbench requires screwdriver for disassembly/reassembly
-- [ ] 🎯 Test: parts shelf runs out of stock
-- [ ] 🎯 Test: wrong part rejected at workbench
-- [ ] 💡 Test: delivery box restocks parts shelf
-- [ ] 💡 Add debug hotkeys for Phase 3 systems
+- [x] 🎯 Add `OrderSpawner` node to `Workshop_Debug.tscn`
+- [x] 🎯 Add `HazardManager` node to `Workshop_Debug.tscn`
+- [x] 🎯 Add `OverheatingHazard` node to `Workshop_Debug.tscn`
+- [x] 🎯 Create hazard scene files (`FloorSpillHazard.tscn`, `PowerSurgeHazard.tscn`)
+- [x] 🎯 Create `Screwdriver.tscn` tool scene
+- [x] 🎯 Wire `OrderSpawner` → `OrderManager` → round flow
+- [x] 🎯 Wire `HazardManager` → round flow (start/stop)
+- [x] 🎯 Update `WorkshopDebug.start_round()` to start spawner + hazard manager
+- [x] 🎯 Add hazard spawn position markers to workshop scene
+- [x] 🎯 Update HUD for multiple orders display
+- [x] 🎯 Update `PartsShelf` with stock system
+- [x] 🎯 Update `WorkbenchStation` with tool requirement
+- [x] 🎯 Add Phase 3 signals to `SignalBus`
+- [x] 🎯 Add Phase 3 constants to `Constants`
+- [x] 🎯 Spawn 2 screwdrivers at round start
+- [x] 🎯 Test: 3+ orders active simultaneously with independent timers
+- [x] 🎯 Test: floor spill spawns, slows player, can be cleared
+- [x] 🎯 Test: power surge disables station, auto-expires or player-clears
+- [x] 🎯 Test: device overheats on workbench after timeout
+- [x] 🎯 Test: workbench requires screwdriver for disassembly/reassembly
+- [x] 🎯 Test: parts shelf runs out of stock
+- [x] 🎯 Test: wrong part rejected at workbench
+- [x] 💡 Test: delivery box restocks parts shelf
+- [x] 💡 Add debug hotkeys for Phase 3 systems
 
 ### Updated Workshop Scene Tree
 
@@ -1747,24 +1747,24 @@ Rules:
 ## Phase 3 Checklist (Summary)
 
 ### 3A — Multiple Simultaneous Orders
-- [ ] 🎯 `OrderSpawner` with configurable spawn interval, ramp, and queue cap
-- [ ] 🎯 Priority orders with shorter timers and higher score
-- [ ] 🎯 Max 5 active orders (configurable per level)
-- [ ] 🎯 HUD shows all active orders with individual timer bars
-- [ ] 🎯 Timer urgency colors (green → yellow → red → flashing)
-- [ ] 🎯 Priority order visual distinction (⚡ prefix, orange tint)
-- [ ] 💡 Spawn rate ramps over round duration
-- [ ] 💡 `max_total_orders` cap for fixed-order levels
+- [x] 🎯 `OrderSpawner` with configurable spawn interval, ramp, and queue cap
+- [x] 🎯 Priority orders with shorter timers and higher score
+- [x] 🎯 Max 5 active orders (configurable per level)
+- [x] 🎯 HUD shows all active orders with individual timer bars
+- [x] 🎯 Timer urgency colors (green → yellow → red → flashing)
+- [x] 🎯 Priority order visual distinction (⚡ prefix, orange tint)
+- [x] 💡 Spawn rate ramps over round duration
+- [x] 💡 `max_total_orders` cap for fixed-order levels
 
 ### 3B — Workshop Hazards
-- [ ] 🎯 `BaseHazard` base class with warning → active → cleared lifecycle
-- [ ] 🎯 `HazardManager` spawner with timing, caps, and hazard pool
-- [ ] 🎯 **Floor Spill**: slows players to 45% speed, cleared by interact (2s)
-- [ ] 🎯 **Power Surge**: disables station for 15s, clearable in 3s, auto-expires
-- [ ] 🎯 **Overheating Device**: device on workbench 20s → overheats, must pick up
-- [ ] 🎯 Warning phase (1-2s flashing) before every hazard activates
-- [ ] 🎯 Hazard collision on layer 5 (`COLLISION_LAYER_HAZARDS`)
-- [ ] 🎯 New signals: `hazard_activated`, `hazard_cleared`, `hazard_expired`
+- [x] 🎯 `BaseHazard` base class with warning → active → cleared lifecycle
+- [x] 🎯 `HazardManager` spawner with timing, caps, and hazard pool
+- [x] 🎯 **Floor Spill**: slows players to 45% speed, cleared by interact (2s)
+- [x] 🎯 **Power Surge**: disables station for 15s, clearable in 3s, auto-expires
+- [x] 🎯 **Overheating Device**: device on workbench 20s → overheats, must pick up
+- [x] 🎯 Warning phase (1-2s flashing) before every hazard activates
+- [x] 🎯 Hazard collision on layer 5 (`COLLISION_LAYER_HAZARDS`)
+- [x] 🎯 New signals: `hazard_activated`, `hazard_cleared`, `hazard_expired`
 - [ ] 💡 **Battery Fire**: emergency event, requires fire extinguisher
 - [ ] 💡 **Cable Tangle**: blocks path until cleared
 
@@ -1789,16 +1789,16 @@ Rules:
 - [x] 💡 Mid-round delivery box spawns at reception desk
 
 ### 3E — Integration & Testing
-- [ ] 🎯 All new nodes added to `Workshop_Debug.tscn`
-- [ ] 🎯 Round flow starts/stops spawner + hazard manager
-- [ ] 🎯 Hazard spawn positions placed in workshop layout
-- [ ] 🎯 New `scripts/hazards/` and `scripts/tools/` directories created
-- [ ] 🎯 Phase 3 signals added to `SignalBus`
-- [ ] 🎯 Phase 3 constants added to `Constants`
-- [ ] 🎯 Debug hotkeys for Phase 3 systems
-- [ ] 🎯 Full 4-player chaos test: orders + hazards + tools + stock
-- [ ] 🎯 Single-player regression: Phase 1-2 behavior unchanged when Phase 3 nodes absent
-- [ ] 🎯 2-player test: both repair independently with tool sharing
+- [x] 🎯 All new nodes added to `Workshop_Debug.tscn`
+- [x] 🎯 Round flow starts/stops spawner + hazard manager
+- [x] 🎯 Hazard spawn positions placed in workshop layout
+- [x] 🎯 New `scripts/hazards/` and `scripts/tools/` directories created
+- [x] 🎯 Phase 3 signals added to `SignalBus`
+- [x] 🎯 Phase 3 constants added to `Constants`
+- [x] 🎯 Debug hotkeys for Phase 3 systems
+- [x] 🎯 Full 4-player chaos test: orders + hazards + tools + stock
+- [x] 🎯 Single-player regression: Phase 1-2 behavior unchanged when Phase 3 nodes absent
+- [x] 🎯 2-player test: both repair independently with tool sharing
 
 ---
 
