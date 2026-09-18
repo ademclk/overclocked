@@ -125,3 +125,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
 [node name="HazardSpawn_5" type="Marker3D" parent="." groups=["hazard_spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 1.5)
 
+[node name="Tools" type="Node3D" parent="."]
+

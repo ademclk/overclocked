@@ -68,3 +68,6 @@ const DEFAULT_SPILL_SLOW_FACTOR: float = 0.45    # Player speed multiplier in sp
 const DEFAULT_SPILL_CLEAR_TIME: float = 2.0      # Seconds to mop up a spill
 const DEFAULT_SURGE_CLEAR_TIME: float = 3.0      # Seconds to fix a surge
 
+# Tool Configuration (Phase 3C)
+const DEFAULT_SCREWDRIVER_COUNT: int = 2
+

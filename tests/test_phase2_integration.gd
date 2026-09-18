@@ -389,6 +389,8 @@ func test_concurrent_collaborative_repair() -> int:
 	workshop.auto_spawn_player = true
 	workshop.auto_start_round = false
 	add_child(workshop)
+	if workshop.workbench and "requires_tool" in workshop.workbench:
+		workshop.workbench.requires_tool = false
 
 	var p1: PlayerCharacter = workshop.get_player(0)
 	var p2: PlayerCharacter = workshop.get_player(1)
@@ -490,6 +492,8 @@ func test_single_player_regression() -> int:
 	workshop.auto_spawn_player = true
 	workshop.auto_start_round = true
 	add_child(workshop)
+	if workshop.workbench and "requires_tool" in workshop.workbench:
+		workshop.workbench.requires_tool = false
 
 	err += _assert(workshop.active_players.size() == 1, "Single player spawned")
 	var p1: PlayerCharacter = workshop.get_player(0)

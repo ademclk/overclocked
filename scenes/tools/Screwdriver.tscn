@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/tool_item.gd" id="1_tool"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="2_interact"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_handle"]
+albedo_color = Color(0.85, 0.15, 0.15, 1)
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_screwdriver"]
+material = SubResource("StandardMaterial3D_handle")
+size = Vector3(0.05, 0.25, 0.05)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_pickup"]
+radius = 0.5
+
+[node name="Screwdriver" type="Node3D"]
+script = ExtResource("1_tool")
+tool_id = "screwdriver"
+tool_display_name = "Screwdriver"
+tool_color = Color(0.85, 0.15, 0.15, 1)
+item_name = "Screwdriver"
+item_type = "tool"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.125, 0)
+mesh = SubResource("BoxMesh_screwdriver")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("2_interact")
+interaction_prompt = "Pick Up Screwdriver"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("SphereShape3D_pickup")

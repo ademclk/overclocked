@@ -135,6 +135,8 @@ func test_end_to_end_core_repair_loop() -> int:
 	err += _assert(workshop != null, "Workshop instantiated in Main")
 	if workshop and workshop.order_spawner:
 		workshop.order_spawner.stop()
+	if workshop and workshop.workbench and "requires_tool" in workshop.workbench:
+		workshop.workbench.requires_tool = false
 
 	var player: PlayerCharacter = workshop.get_player(0)
 	err += _assert(player != null, "Player auto-spawned in workshop")

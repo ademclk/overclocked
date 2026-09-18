@@ -4,12 +4,19 @@ extends BaseStation
 ## Multi-step workbench station for disassembling devices, installing replacement parts,
 ## and reassembling devices.
 ## Accepts devices in DIAGNOSED, DISASSEMBLED, and PART_REPLACED states.
+## Requires a tool (e.g. screwdriver) for disassembly and reassembly operations.
 
 @export var disassembly_time: float = 2.0
 @export var reassembly_time: float = 2.0
 @export var work_time: float = 2.0
 
+@export_group("Tool Requirements")
+@export var requires_tool: bool = false
+@export var required_tool_id: String = "screwdriver"
+@export var required_tool_name: String = "screwdriver"
+
 var _target_next_state: String = ""
+var _bench_tool: ToolItem = null
 
 
 func _ready() -> void:
@@ -19,6 +26,78 @@ func _ready() -> void:
 	accepted_device_states = ["DIAGNOSED", "DISASSEMBLED", "PART_REPLACED"]
 	add_to_group("workbenches")
 	super._ready()
+
+
+func get_bench_tool() -> ToolItem:
+	return _bench_tool
+
+
+## Checks if a player has the required tool available for workbench operations
+func _has_required_tool(player: PlayerCharacter) -> bool:
+	if not requires_tool:
+		return true
+
+	# Check 1: Is the player carrying the right tool?
+	if player and player.carry_system and player.carry_system.is_carrying():
+		var held: Carriable = player.carry_system.get_held_item()
+		if held is ToolItem and (held as ToolItem).tool_id == required_tool_id:
+			return true
+
+	# Check 2: Is there a tool on the workbench?
+	if _bench_tool != null and is_instance_valid(_bench_tool):
+		if _bench_tool is ToolItem and (_bench_tool as ToolItem).tool_id == required_tool_id:
+			return true
+
+	return false
+
+
+## Checks if the player is carrying an incorrect tool
+func _has_wrong_tool(player: PlayerCharacter) -> bool:
+	if not requires_tool:
+		return false
+	if player and player.carry_system and player.carry_system.is_carrying():
+		var held: Carriable = player.carry_system.get_held_item()
+		if held is ToolItem and (held as ToolItem).tool_id != required_tool_id:
+			return true
+	return false
+
+
+## Updated interaction: place tool on bench if carrying one and bench has space
+func _try_place_tool(player: PlayerCharacter) -> bool:
+	if not player or not player.carry_system or not player.carry_system.is_carrying():
+		return false
+
+	var held: Carriable = player.carry_system.get_held_item()
+	if held is ToolItem and _bench_tool == null:
+		var tool: ToolItem = held as ToolItem
+		player.carry_system.place_on_station(self)
+
+		_bench_tool = tool
+		if tool.get_parent():
+			tool.get_parent().remove_child(tool)
+		if device_slot:
+			device_slot.add_child(tool)
+			tool.position = Vector3(0.35, 0.0, 0.0)
+		else:
+			add_child(tool)
+			tool.position = Vector3(0.35, 0.9, 0.0)
+		_update_visual_state()
+		return true
+
+	return false
+
+
+## Pick up the bench tool (when no device to pick up, or bench has tool but no device)
+func _try_pick_up_tool(player: PlayerCharacter) -> bool:
+	if _bench_tool and is_instance_valid(_bench_tool) and player and player.carry_system and player.carry_system.can_pick_up():
+		var tool: ToolItem = _bench_tool
+		_bench_tool = null
+		if tool.get_parent():
+			tool.get_parent().remove_child(tool)
+		player.carry_system.pick_up(tool)
+		_update_visual_state()
+		return true
+	return false
 
 
 func can_accept_device(device: Carriable) -> bool:
@@ -35,30 +114,52 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 
 	var carry: CarrySystem = player.carry_system
 
-	# Case 1: Workbench is empty
+	# Case 1: Workbench has no device
 	if not placed_device:
 		if carry.is_carrying():
-			return _can_accept_workbench_item(carry.get_held_item())
+			var held: Carriable = carry.get_held_item()
+			if held is ToolItem:
+				return _bench_tool == null
+			return _can_accept_workbench_item(held)
+		# Player has empty hands: can pick up tool if one is on the bench
+		if _bench_tool != null and is_instance_valid(_bench_tool):
+			return carry.can_pick_up()
 		return false
 
 	# Case 2: Generic carriable fallback (for unit tests)
 	if not placed_device.has_method("get_repair_state"):
+		if carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null:
+			return true
 		return carry.can_pick_up()
 
-	# Case 3: Device on bench
+	# Case 3: Overheated device
 	if placed_device.has_meta("is_overheated"):
 		return carry.can_pick_up()
+
+	# If carrying wrong tool, interaction is blocked
+	if _has_wrong_tool(player):
+		return false
+
+	# Case 4: Carrying the required tool when bench has device but no bench tool
+	if carry.is_carrying():
+		var held: Carriable = carry.get_held_item()
+		if held is ToolItem:
+			if (held as ToolItem).tool_id == required_tool_id and _bench_tool == null:
+				return true
+			return false
 
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
-			return true
+			return _has_required_tool(player)
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				return _is_valid_replacement_part(placed_device, carry.get_held_item())
 			return false
 		"PART_REPLACED":
-			return carry.can_pick_up()
+			if not _has_required_tool(player):
+				return false
+			return carry.can_pick_up() or (carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null)
 		"REASSEMBLED":
 			return carry.can_pick_up()
 		_:
@@ -76,43 +177,76 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 
 	var carry: CarrySystem = player.carry_system
 
-	# Workbench empty
+	# Case 1: Workbench has no device
 	if not placed_device:
 		if carry.is_carrying():
 			var held: Carriable = carry.get_held_item()
+			if held is ToolItem:
+				if _bench_tool == null:
+					return "Place %s on Workbench" % held.item_name
+				return "Workbench already has a tool"
 			if _can_accept_workbench_item(held):
 				return "Place Device on Workbench"
+		elif _bench_tool != null and is_instance_valid(_bench_tool):
+			if carry.can_pick_up():
+				return "Pick Up %s" % _bench_tool.tool_display_name
+			return "Hands Full - Cannot Pick Up %s" % _bench_tool.tool_display_name
 		return ""
 
-	# Generic Carriable fallback
+	# Case 2: Generic Carriable fallback
 	if not placed_device.has_method("get_repair_state"):
+		if carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null:
+			return "Place %s on Workbench" % carry.get_held_item().item_name
 		return "Pick Up Device"
 
+	# Case 3: Overheated device
 	if placed_device.has_meta("is_overheated"):
 		if carry.can_pick_up():
 			return "Pick Up Overheated Device (Cool Down)"
 		return "Hands Full - Cannot Cool Device"
 
+	# Case 4: Wrong tool feedback
+	if _has_wrong_tool(player):
+		return "Wrong Tool: Needs %s" % required_tool_name
+
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
+			if carry.is_carrying():
+				var held: Carriable = carry.get_held_item()
+				if held is ToolItem and (held as ToolItem).tool_id == required_tool_id:
+					return "Disassemble Device"
+			if not _has_required_tool(player):
+				return "Needs %s" % required_tool_name
 			return "Disassemble Device"
+
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				var held: Carriable = carry.get_held_item()
+				if held is ToolItem and _bench_tool == null:
+					return "Place %s on Workbench" % held.item_name
 				if _is_valid_replacement_part(placed_device, held):
 					var part_name: String = held.item_name if not held.item_name.is_empty() else "Replacement Part"
 					return "Install %s" % part_name
 				return "Wrong Replacement Part"
 			return "Need Replacement Part"
+
 		"PART_REPLACED":
+			if carry.is_carrying():
+				var held: Carriable = carry.get_held_item()
+				if held is ToolItem and (held as ToolItem).tool_id == required_tool_id and _bench_tool == null:
+					return "Place %s and Reassemble" % held.item_name
+			if not _has_required_tool(player):
+				return "Needs %s to reassemble" % required_tool_name
 			if carry.can_pick_up():
 				return "Reassemble Device"
 			return "Hands Full - Cannot Reassemble"
+
 		"REASSEMBLED":
 			if carry.can_pick_up():
 				return "Pick Up Reassembled Device"
 			return "Hands Full - Cannot Pick Up"
+
 		_:
 			return "Pick Up Device"
 
@@ -127,13 +261,25 @@ func _on_interacted(player: PlayerCharacter) -> void:
 
 	var carry: CarrySystem = player.carry_system
 
-	# Branch 1: Bench is empty -> Try place device
+	# Branch 1: Bench has no device
 	if not placed_device:
-		_try_place_device(player)
+		if carry.is_carrying():
+			var held: Carriable = carry.get_held_item()
+			if held is ToolItem:
+				_try_place_tool(player)
+				return
+			_try_place_device(player)
+			return
+		elif _bench_tool != null:
+			_try_pick_up_tool(player)
+			return
 		return
 
 	# Branch 2: Generic carriable fallback
 	if not placed_device.has_method("get_repair_state"):
+		if carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null:
+			_try_place_tool(player)
+			return
 		_try_pick_up(player)
 		return
 
@@ -142,26 +288,38 @@ func _on_interacted(player: PlayerCharacter) -> void:
 		_try_pick_up(player)
 		return
 
-	# Branch 4: Device multi-step pipeline
+	# Branch 4: Player carrying a tool -> place tool on bench
+	if carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null:
+		var placed_ok := _try_place_tool(player)
+		if placed_ok and placed_device:
+			var r_state_check: String = str(placed_device.get_repair_state())
+			if r_state_check == "DIAGNOSED" and _has_required_tool(player):
+				set_active_user(player)
+				_start_disassembly()
+		return
+
+	# Branch 5: Device multi-step pipeline
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
-			set_active_user(player)
-			_start_disassembly()
+			if _has_required_tool(player):
+				set_active_user(player)
+				_start_disassembly()
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				_try_install_part(player)
 			else:
 				_try_pick_up(player)
 		"PART_REPLACED":
-			_try_reassemble(player)
+			if _has_required_tool(player):
+				_try_reassemble(player)
 		"REASSEMBLED":
 			_try_pick_up(player)
 		_:
 			_try_pick_up(player)
 
 
-## Helper: Places a carried device onto empty workbench and auto-starts disassembly if diagnosed
+## Helper: Places a carried device onto empty workbench and auto-starts disassembly if diagnosed and tool present
 func _try_place_device(player: PlayerCharacter) -> bool:
 	var carry: CarrySystem = player.carry_system
 	if not carry.is_carrying():
@@ -175,13 +333,19 @@ func _try_place_device(player: PlayerCharacter) -> bool:
 	carry.place_on_station(self)
 	accept_device(item)
 
-	# Auto-start disassembly for DIAGNOSED devices
+	# Auto-start disassembly for DIAGNOSED devices if tool is available
+	var is_diag: bool = false
 	if item is Device:
-		var dev := item as Device
-		if dev.current_repair_state == RepairState.State.DIAGNOSED:
+		is_diag = (item as Device).current_repair_state == RepairState.State.DIAGNOSED
+	elif item.has_method("get_repair_state"):
+		is_diag = str(item.get_repair_state()) == "DIAGNOSED"
+
+	if is_diag:
+		if _has_required_tool(player):
 			_start_disassembly()
-	elif item.has_method("get_repair_state") and str(item.get_repair_state()) == "DIAGNOSED":
-		_start_disassembly()
+		else:
+			current_state = StationState.OCCUPIED
+			_update_visual_state()
 
 	return true
 
@@ -229,7 +393,10 @@ func _try_install_part(player: PlayerCharacter) -> bool:
 
 ## Helper: Starts reassembly processing
 func _try_reassemble(player: PlayerCharacter) -> bool:
-	if not player.carry_system.can_pick_up():
+	if not _has_required_tool(player):
+		return false
+
+	if not player.carry_system.can_pick_up() and not (player.carry_system.is_carrying() and player.carry_system.get_held_item() is ToolItem):
 		return false
 
 	set_active_user(player)
@@ -291,10 +458,20 @@ func _update_visual_state() -> void:
 
 	if placed_device and placed_device.has_method("get_repair_state"):
 		var r_state: String = str(placed_device.get_repair_state())
-		if r_state == "DISASSEMBLED" and current_state == StationState.OCCUPIED:
+		if r_state == "DIAGNOSED" and current_state == StationState.OCCUPIED:
+			if not _has_required_tool(null):
+				progress_label.visible = true
+				progress_label.text = "NEED %s" % required_tool_name.to_upper()
+				progress_label.modulate = Color(0.95, 0.35, 0.2)
+		elif r_state == "DISASSEMBLED" and current_state == StationState.OCCUPIED:
 			progress_label.visible = true
 			progress_label.text = "NEED PART"
 			progress_label.modulate = Color(0.95, 0.65, 0.15)
+		elif r_state == "PART_REPLACED" and current_state == StationState.OCCUPIED:
+			if not _has_required_tool(null):
+				progress_label.visible = true
+				progress_label.text = "NEED %s" % required_tool_name.to_upper()
+				progress_label.modulate = Color(0.95, 0.35, 0.2)
 
 
 func _can_accept_workbench_item(item: Carriable) -> bool:
