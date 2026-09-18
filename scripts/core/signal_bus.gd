@@ -15,6 +15,8 @@ signal player_left(player_id: int)
 
 # Workshop & Interaction Signals
 signal station_interacted(station_name: String, player_id: int)
+signal station_occupied(station_name: String, player_id: int)
+signal station_released(station_name: String)
 signal item_picked_up(item_name: String, player_id: int)
 signal item_dropped(item_name: String, player_id: int)
 signal item_claimed(item_name: String, player_id: int, contested: bool)

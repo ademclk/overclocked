@@ -70,7 +70,7 @@ func _find_nearest_interactable() -> Interactable:
 	for interactable in _interactables_in_range:
 		if is_instance_valid(interactable):
 			valid_interactables.append(interactable)
-			if interactable.can_interact(player):
+			if interactable.is_interactable:
 				var dist: float = (
 					player.global_position.distance_squared_to(interactable.global_position)
 					if player
@@ -89,7 +89,7 @@ func get_current_focus() -> Interactable:
 
 
 func get_prompt_text() -> String:
-	if _current_focus and _current_focus.can_interact(player):
+	if _current_focus:
 		return _current_focus.get_prompt_text(player)
 	return ""
 

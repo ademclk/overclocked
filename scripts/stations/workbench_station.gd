@@ -25,6 +25,8 @@ func can_accept_device(device: Carriable) -> bool:
 
 
 func can_player_interact(player: PlayerCharacter) -> bool:
+	if not super.can_player_interact(player):
+		return false
 	if _is_processing:
 		return false
 	if not player or not player.carry_system:
@@ -60,6 +62,9 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 
 
 func get_interaction_prompt(player: PlayerCharacter) -> String:
+	if _active_user != null and _active_user != player and is_instance_valid(_active_user):
+		return "In use by P%d" % (_active_user.player_index + 1)
+
 	if _is_processing:
 		return "Working..."
 	if not player or not player.carry_system:
@@ -104,6 +109,9 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 
 
 func _on_interacted(player: PlayerCharacter) -> void:
+	if not can_player_interact(player):
+		return
+
 	super._on_interacted(player)
 	if not player or not player.carry_system:
 		return
@@ -122,6 +130,7 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
+			set_active_user(player)
 			_start_disassembly()
 		"DISASSEMBLED":
 			_try_install_part(player)
@@ -143,6 +152,7 @@ func _try_place_device(player: PlayerCharacter) -> bool:
 	if not _can_accept_workbench_item(item):
 		return false
 
+	set_active_user(player)
 	carry.place_on_station(self)
 	accept_device(item)
 
@@ -174,6 +184,8 @@ func _try_install_part(player: PlayerCharacter) -> bool:
 	if not _is_valid_replacement_part(placed_device, part):
 		return false
 
+	set_active_user(player)
+
 	if placed_device is Device:
 		var dev := placed_device as Device
 		var comp: ComponentData = part.get_meta("component_data", null) as ComponentData
@@ -201,6 +213,7 @@ func _try_reassemble(player: PlayerCharacter) -> bool:
 	if not player.carry_system.can_pick_up():
 		return false
 
+	set_active_user(player)
 	_target_next_state = "REASSEMBLED"
 	processing_time = reassembly_time
 	start_processing()
@@ -248,6 +261,8 @@ func _on_processing_done() -> void:
 
 	_target_next_state = ""
 	_update_visual_state()
+	if _active_user != null and not _focusing_players.has(_active_user):
+		clear_active_user()
 
 
 func _update_visual_state() -> void:

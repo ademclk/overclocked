@@ -18,6 +18,8 @@ func _ready() -> void:
 
 
 func can_player_interact(player: PlayerCharacter) -> bool:
+	if not super.can_player_interact(player):
+		return false
 	if not player or not player.carry_system:
 		return false
 	if player.carry_system.is_carrying():
@@ -26,6 +28,8 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 
 
 func get_interaction_prompt(player: PlayerCharacter) -> String:
+	if _active_user != null and _active_user != player and is_instance_valid(_active_user):
+		return "In use by P%d" % (_active_user.player_index + 1)
 	if player and player.carry_system and player.carry_system.is_carrying():
 		if _is_valid_delivery_device(player.carry_system.get_held_item()):
 			return "Deliver Repaired Device"
@@ -33,6 +37,9 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 
 
 func _on_interacted(player: PlayerCharacter) -> void:
+	if not can_player_interact(player):
+		return
+
 	super._on_interacted(player)
 	if not player or not player.carry_system:
 		return
@@ -40,6 +47,7 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if player.carry_system.is_carrying():
 		var device: Carriable = player.carry_system.get_held_item()
 		if _is_valid_delivery_device(device):
+			set_active_user(player)
 			player.carry_system.place_on_station(self)
 			accept_device(device)
 			current_state = StationState.COMPLETE
@@ -51,6 +59,7 @@ func _on_interacted(player: PlayerCharacter) -> void:
 			var mgr: OrderManager = order_manager as OrderManager if order_manager is OrderManager else _find_order_manager()
 			if mgr:
 				mgr.complete_order_for_device(device)
+			clear_active_user(player)
 
 
 func _find_order_manager() -> OrderManager:

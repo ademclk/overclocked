@@ -185,18 +185,22 @@ func _update_interaction_prompt() -> void:
 		return
 
 	var focus: Interactable = _tracked_player.interaction_system.get_current_focus()
-	if focus and focus.can_interact(_tracked_player):
+	if focus:
 		var action_name: String = InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT)
 		var prompt_text: String = focus.get_prompt_text(_tracked_player)
 
-		if prompt_text.begins_with("Press "):
+		if prompt_text.is_empty():
+			interaction_prompt.visible = false
+			prompt_label.text = ""
+		elif not focus.can_interact(_tracked_player):
 			prompt_label.text = prompt_text
-		elif prompt_text.is_empty():
-			prompt_label.text = "Press %s to interact" % action_name
+			interaction_prompt.visible = true
+		elif prompt_text.begins_with("Press "):
+			prompt_label.text = prompt_text
+			interaction_prompt.visible = true
 		else:
 			prompt_label.text = "Press %s to %s" % [action_name, prompt_text]
-
-		interaction_prompt.visible = true
+			interaction_prompt.visible = true
 	else:
 		interaction_prompt.visible = false
 		prompt_label.text = ""

@@ -9,6 +9,7 @@ signal device_removed(device: Carriable)
 signal processing_started(device: Carriable)
 signal processing_completed(device: Carriable)
 signal station_state_changed(old_state: StationState, new_state: StationState)
+signal user_changed(old_user: PlayerCharacter, new_user: PlayerCharacter)
 
 enum StationState {
 	IDLE,
@@ -34,6 +35,8 @@ var placed_device: Carriable = null
 var _processing_timer: float = 0.0
 var _is_processing: bool = false
 var _station_material: StandardMaterial3D = null
+var _active_user: PlayerCharacter = null
+var _focusing_players: Array[PlayerCharacter] = []
 
 @onready var device_slot: Marker3D = get_node_or_null("DeviceSlot") as Marker3D
 @onready var interaction_zone: Interactable = get_node_or_null("InteractionZone") as Interactable
@@ -105,6 +108,7 @@ func remove_device() -> Carriable:
 	_is_processing = false
 	_processing_timer = 0.0
 	current_state = StationState.IDLE
+	clear_active_user()
 
 	if device and device_slot and device.get_parent() == device_slot:
 		device_slot.remove_child(device)
@@ -136,6 +140,8 @@ func _complete_processing() -> void:
 	_update_visual_state()
 	_on_processing_done()
 	processing_completed.emit(placed_device)
+	if _active_user != null and not _focusing_players.has(_active_user):
+		clear_active_user()
 
 
 func _apply_processing_wobble() -> void:
@@ -156,13 +162,47 @@ func get_progress() -> float:
 	return clampf(_processing_timer / processing_time, 0.0, 1.0)
 
 
+## Call when a player starts using this station
+func set_active_user(player: PlayerCharacter) -> void:
+	if _active_user != player:
+		var old_user := _active_user
+		_active_user = player
+		user_changed.emit(old_user, _active_user)
+		var pid: int = player.player_index if player else 0
+		SignalBus.station_occupied.emit(station_name, pid)
+		_update_visual_state()
+
+
+## Call when a player stops using this station (walks away, picks up device)
+func clear_active_user(player: PlayerCharacter = null) -> void:
+	if player == null or _active_user == player:
+		if _active_user != null:
+			var old_user := _active_user
+			_active_user = null
+			user_changed.emit(old_user, null)
+			SignalBus.station_released.emit(station_name)
+			_update_visual_state()
+
+
+func get_active_user() -> PlayerCharacter:
+	return _active_user
+
+
+func is_occupied() -> bool:
+	return _active_user != null and is_instance_valid(_active_user)
+
+
 ## Override in subclasses to determine if a player can interact with the station
-func can_player_interact(_player: PlayerCharacter) -> bool:
+func can_player_interact(player: PlayerCharacter) -> bool:
+	if _active_user != null and _active_user != player and is_instance_valid(_active_user):
+		return false
 	return true
 
 
 ## Override in subclasses to return HUD interaction prompt
-func get_interaction_prompt(_player: PlayerCharacter) -> String:
+func get_interaction_prompt(player: PlayerCharacter) -> String:
+	if _active_user != null and _active_user != player and is_instance_valid(_active_user):
+		return "In use by P%d" % (_active_user.player_index + 1)
 	return "Interact with %s" % station_name
 
 
@@ -176,12 +216,18 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	SignalBus.station_interacted.emit(station_name, player.player_index if player else 0)
 
 
-func _on_focus_gained(_player: PlayerCharacter) -> void:
+func _on_focus_gained(player: PlayerCharacter) -> void:
+	if player and not _focusing_players.has(player):
+		_focusing_players.append(player)
 	_set_highlight(true)
 
 
-func _on_focus_lost(_player: PlayerCharacter) -> void:
-	_set_highlight(false)
+func _on_focus_lost(player: PlayerCharacter) -> void:
+	if player:
+		_focusing_players.erase(player)
+	_set_highlight(not _focusing_players.is_empty())
+	if _active_user == player and not _is_processing:
+		clear_active_user(player)
 
 
 func _on_state_changed(_old_state: StationState, _new_state: StationState) -> void:
@@ -207,14 +253,22 @@ func _setup_station_material() -> void:
 
 
 func _set_highlight(highlighted: bool) -> void:
-	if _station_material:
-		_station_material.emission_enabled = highlighted
-		if highlighted:
-			_station_material.emission = Color(0.2, 0.25, 0.3)
+	if not _station_material:
+		return
+	if is_occupied() and _active_user:
+		_station_material.emission_enabled = true
+		var color_idx: int = _active_user.player_index % Constants.PLAYER_COLORS.size()
+		_station_material.emission = Constants.PLAYER_COLORS[color_idx] * 0.6
+	elif highlighted or not _focusing_players.is_empty():
+		_station_material.emission_enabled = true
+		_station_material.emission = Color(0.2, 0.25, 0.3)
+	else:
+		_station_material.emission_enabled = false
 
 
 func _update_visual_state() -> void:
 	_update_progress_indicator()
+	_set_highlight(not _focusing_players.is_empty())
 
 
 func _update_progress_indicator() -> void:

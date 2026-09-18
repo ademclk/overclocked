@@ -16,6 +16,8 @@ func _ready() -> void:
 
 
 func can_player_interact(player: PlayerCharacter) -> bool:
+	if not super.can_player_interact(player):
+		return false
 	if _is_processing:
 		return false
 	if not player or not player.carry_system:
@@ -33,6 +35,9 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 
 
 func get_interaction_prompt(player: PlayerCharacter) -> String:
+	if _active_user != null and _active_user != player and is_instance_valid(_active_user):
+		return "In use by P%d" % (_active_user.player_index + 1)
+
 	if _is_processing:
 		return "Diagnosing..."
 
@@ -48,6 +53,9 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 
 
 func _on_interacted(player: PlayerCharacter) -> void:
+	if not can_player_interact(player):
+		return
+
 	super._on_interacted(player)
 	if not player or not player.carry_system:
 		return
@@ -55,6 +63,7 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if not placed_device and player.carry_system.is_carrying():
 		var device: Carriable = player.carry_system.get_held_item()
 		if _is_valid_device_state(device):
+			set_active_user(player)
 			player.carry_system.place_on_station(self)
 			accept_device(device)
 			start_processing()
