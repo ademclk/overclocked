@@ -543,20 +543,32 @@ func _update_order_row(entry: HBoxContainer, order: Order) -> void:
 			if order.device_instance.is_diagnosed and order.assigned_fault:
 				dev_name += " (%s)" % order.assigned_fault.fault_name
 			dev_name += " [%s]" % order.device_instance.get_repair_state()
+		if order.is_priority:
+			dev_name = "⚡ " + dev_name
 		name_label.text = dev_name
+
+	if order.is_priority:
+		# Priority styling: red-orange tint for visual urgency
+		entry.modulate = Color(1.0, 0.7, 0.3)
+	else:
+		entry.modulate = Color.WHITE
 
 	if timer_bar:
 		timer_bar.max_value = order.time_limit
 		timer_bar.value = order.time_remaining
 
-		# Color change based on urgency: >50% green, 20-50% yellow, <20% red
+		# Color change based on urgency: >50% green, 20-50% yellow, 10-20% red, <10% flashing red
 		var ratio: float = order.get_time_ratio()
 		if ratio >= 0.5:
 			timer_bar.modulate = COLOR_TIMER_HEALTHY
 		elif ratio >= 0.2:
 			timer_bar.modulate = COLOR_TIMER_WARNING
-		else:
+		elif ratio >= 0.1:
 			timer_bar.modulate = COLOR_TIMER_CRITICAL
+		else:
+			# Flashing red for critical urgency (<10%)
+			var flash: float = sin(Time.get_ticks_msec() * 0.01) * 0.5 + 0.5
+			timer_bar.modulate = Color(1.0, flash * 0.3, flash * 0.2)
 
 
 func _create_or_get_order_entry(order: Order) -> HBoxContainer:

@@ -12,6 +12,7 @@ extends Resource
 @export var base_score: int = 100
 @export_range(0.0, 1.0) var three_star_threshold: float = 0.5
 @export_range(0.0, 1.0) var two_star_threshold: float = 0.2
+@export var is_priority: bool = false
 @export var customer_name: String = "Customer"
 
 

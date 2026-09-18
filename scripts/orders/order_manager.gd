@@ -26,6 +26,7 @@ var expired_orders: Array[Order] = []
 var total_score: int = 0
 var total_stars: int = 0
 
+var order_spawner: Node = null
 var _order_counter: int = 0
 
 
@@ -162,17 +163,26 @@ func _on_order_completed(stars: int, score: int, order: Order) -> void:
 	total_stars += stars
 	order_completed.emit(order, stars, score)
 
-	if active_orders.is_empty():
-		all_orders_complete.emit()
+	_check_all_orders_complete()
 
 
 func _on_order_expired(order: Order) -> void:
 	active_orders.erase(order)
 	expired_orders.append(order)
+	if reception_desk and order.device_instance and is_instance_valid(reception_desk):
+		if reception_desk.has_method("remove_incoming_device"):
+			reception_desk.remove_incoming_device(order.device_instance)
 	order_expired.emit(order)
 
-	if active_orders.is_empty():
-		all_orders_complete.emit()
+	_check_all_orders_complete()
+
+
+func _check_all_orders_complete() -> void:
+	if not active_orders.is_empty():
+		return
+	if order_spawner and is_instance_valid(order_spawner) and order_spawner.has_method("is_spawning") and order_spawner.is_spawning():
+		return
+	all_orders_complete.emit()
 
 
 func _on_device_delivered_at_counter(device: Carriable) -> void:

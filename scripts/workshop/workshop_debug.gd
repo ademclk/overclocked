@@ -23,6 +23,7 @@ var _debug_focused_player: int = 0
 @onready var stations_container: Node3D = get_node_or_null("Stations") as Node3D
 @onready var entities_container: Node3D = get_node_or_null("Entities") as Node3D
 @onready var order_manager: OrderManager = get_node_or_null("OrderManager") as OrderManager
+@onready var order_spawner: OrderSpawner = get_node_or_null("OrderSpawner") as OrderSpawner
 
 # Station references with fallback for flat or nested hierarchy
 @onready var reception_desk: ReceptionDesk = (
@@ -162,11 +163,20 @@ func start_round() -> void:
 		var data_to_use := default_device_data if default_device_data != null else DEFAULT_PHONE_DATA
 		order_manager.spawn_order(data_to_use)
 
+	if order_spawner and is_instance_valid(order_spawner):
+		order_spawner.start()
+
 
 ## Connects OrderManager, ReceptionDesk, and DeliveryCounter into a unified pipeline
 func _connect_order_pipeline() -> void:
 	if not order_manager:
 		return
+
+	if not order_spawner:
+		order_spawner = get_node_or_null("OrderSpawner") as OrderSpawner
+	if order_spawner and is_instance_valid(order_spawner):
+		order_spawner.order_manager = order_manager
+		order_manager.order_spawner = order_spawner
 
 	if reception_desk:
 		order_manager.reception_desk = reception_desk
@@ -204,6 +214,11 @@ func _on_order_completed(_order: Order, _stars: int, _score: int) -> void:
 
 
 func _on_all_orders_complete() -> void:
+	if order_spawner and is_instance_valid(order_spawner) and order_spawner.is_spawning():
+		return
+	if order_spawner and is_instance_valid(order_spawner):
+		order_spawner.stop()
+
 	var final_score: int = order_manager.total_score if order_manager else 0
 	var final_stars: int = order_manager.total_stars if order_manager else 0
 	SignalBus.round_ended.emit(final_score, final_stars)
@@ -294,6 +309,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_F5:
+				_debug_spawn_order()
+				get_viewport().set_input_as_handled()
 			KEY_F6:
 				_debug_advance_device(RepairState.State.DIAGNOSED)
 				get_viewport().set_input_as_handled()
@@ -430,6 +448,21 @@ func _debug_complete_order() -> void:
 	print("[Debug F8] Order '%s' completed via debug hotkey." % ord.order_id)
 
 
+func _debug_spawn_order() -> void:
+	if order_spawner and is_instance_valid(order_spawner):
+		var ord: Order = order_spawner.try_spawn_order()
+		if ord:
+			print("[Debug F5] Spawner created order '%s' (%s, priority=%s)" % [
+				ord.order_id, ord.get_device_name(), ord.is_priority
+			])
+		else:
+			print("[Debug F5] Spawner skipped spawn (queue full or max reached).")
+	elif order_manager and is_instance_valid(order_manager):
+		var ord: Order = order_manager.spawn_order()
+		if ord:
+			print("[Debug F5] OrderManager created order '%s'" % ord.order_id)
+
+
 func _debug_dump_state() -> void:
 	print("\n================= WORKSHOP STATE DUMP =================")
 	_clean_active_players()
@@ -458,9 +491,15 @@ func _debug_dump_state() -> void:
 		])
 		for ord in order_manager.active_orders:
 			var dev_state := ord.device_instance.get_repair_state() if ord.device_instance else "No Device"
-			print("  - Order %s: %s [%s] | Time Remaining: %.1fs / %.1fs" % [
-				ord.order_id, ord.get_device_name(), dev_state, ord.time_remaining, ord.time_limit
+			print("  - Order %s: %s [%s] | Time Remaining: %.1fs / %.1fs%s" % [
+				ord.order_id, ord.get_device_name(), dev_state, ord.time_remaining, ord.time_limit,
+				(" [PRIORITY]" if ord.is_priority else "")
 			])
+
+	if order_spawner and is_instance_valid(order_spawner):
+		print("OrderSpawner: Active=%s | Interval=%.1fs | Total Spawned=%d" % [
+			order_spawner.is_spawning(), order_spawner.get_current_interval(), order_spawner.get_total_spawned()
+		])
 
 	print("Stations:")
 	for st in get_all_stations():

@@ -19,6 +19,7 @@ var time_remaining: float = 60.0
 var is_active: bool = false
 var is_completed: bool = false
 var is_expired: bool = false
+var is_priority: bool = false
 
 # Star thresholds (percentage of time remaining)
 var three_star_threshold: float = 0.5   # 50%+ time remaining = 3 stars
@@ -33,6 +34,7 @@ func initialize(id: String, dev_data: DeviceData, fault: FaultData = null, limit
 	assigned_fault = fault if fault != null else (dev_data.get_random_fault() if dev_data else null)
 	time_limit = limit if limit > 0.0 else (dev_data.base_repair_time if dev_data else 60.0)
 	time_remaining = time_limit
+	is_priority = false
 
 
 ## Initializes the order from an OrderData resource template
@@ -47,6 +49,8 @@ func initialize_from_data(data: OrderData) -> void:
 	three_star_threshold = data.three_star_threshold
 	two_star_threshold = data.two_star_threshold
 	base_score = data.base_score
+	if "is_priority" in data:
+		is_priority = data.is_priority
 
 
 ## Activates the order and starts the countdown
