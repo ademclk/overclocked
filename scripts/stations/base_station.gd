@@ -51,6 +51,7 @@ var _focusing_players: Array[PlayerCharacter] = []
 
 
 func _ready() -> void:
+	add_to_group("stations")
 	collision_layer = Constants.COLLISION_MASK_STATIONS
 	collision_mask = 0
 
@@ -89,6 +90,7 @@ func accept_device(device: Carriable) -> void:
 	if device.get_parent():
 		device.get_parent().remove_child(device)
 
+	device.visible = true
 	if device_slot:
 		device_slot.add_child(device)
 		device.position = Vector3.ZERO
@@ -146,13 +148,15 @@ func _complete_processing() -> void:
 
 func _apply_processing_wobble() -> void:
 	if placed_device and is_instance_valid(placed_device):
+		var base_y: float = 0.0 if (device_slot and placed_device.get_parent() == device_slot) else 0.9
 		var wobble_y: float = sin(_processing_timer * 18.0) * 0.015
-		placed_device.position.y = wobble_y
+		placed_device.position.y = base_y + wobble_y
 
 
 func _reset_processing_wobble() -> void:
 	if placed_device and is_instance_valid(placed_device):
-		placed_device.position = Vector3.ZERO
+		var base_y: float = 0.0 if (device_slot and placed_device.get_parent() == device_slot) else 0.9
+		placed_device.position = Vector3(0.0, base_y, 0.0)
 		placed_device.rotation = Vector3.ZERO
 
 

@@ -14,6 +14,7 @@ const DEFAULT_DEVICE_SCENE: PackedScene = preload("res://scenes/devices/Device.t
 @export var player_count_override: int = 0
 @export var player_scene: PackedScene = DEFAULT_PLAYER_SCENE
 @export var default_device_data: DeviceData = DEFAULT_PHONE_DATA
+@export var auto_start_hazards: bool = true
 
 var active_players: Array[PlayerCharacter] = []
 var _debug_focused_player: int = 0
@@ -24,6 +25,8 @@ var _debug_focused_player: int = 0
 @onready var entities_container: Node3D = get_node_or_null("Entities") as Node3D
 @onready var order_manager: OrderManager = get_node_or_null("OrderManager") as OrderManager
 @onready var order_spawner: OrderSpawner = get_node_or_null("OrderSpawner") as OrderSpawner
+@onready var hazard_manager: HazardManager = get_node_or_null("HazardManager") as HazardManager
+@onready var overheating_hazard: OverheatingHazard = get_node_or_null("OverheatingHazard") as OverheatingHazard
 
 # Station references with fallback for flat or nested hierarchy
 @onready var reception_desk: ReceptionDesk = (
@@ -166,6 +169,9 @@ func start_round() -> void:
 	if order_spawner and is_instance_valid(order_spawner):
 		order_spawner.start()
 
+	if auto_start_hazards and hazard_manager and is_instance_valid(hazard_manager):
+		hazard_manager.start()
+
 
 ## Connects OrderManager, ReceptionDesk, and DeliveryCounter into a unified pipeline
 func _connect_order_pipeline() -> void:
@@ -177,6 +183,14 @@ func _connect_order_pipeline() -> void:
 	if order_spawner and is_instance_valid(order_spawner):
 		order_spawner.order_manager = order_manager
 		order_manager.order_spawner = order_spawner
+
+	if not hazard_manager:
+		hazard_manager = get_node_or_null("HazardManager") as HazardManager
+
+	if not overheating_hazard:
+		overheating_hazard = get_node_or_null("OverheatingHazard") as OverheatingHazard
+	if overheating_hazard and workbench is WorkbenchStation:
+		overheating_hazard.register_workbench(workbench as WorkbenchStation)
 
 	if reception_desk:
 		order_manager.reception_desk = reception_desk
@@ -218,6 +232,9 @@ func _on_all_orders_complete() -> void:
 		return
 	if order_spawner and is_instance_valid(order_spawner):
 		order_spawner.stop()
+
+	if hazard_manager and is_instance_valid(hazard_manager):
+		hazard_manager.stop()
 
 	var final_score: int = order_manager.total_score if order_manager else 0
 	var final_stars: int = order_manager.total_stars if order_manager else 0
@@ -329,6 +346,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			KEY_F11:
 				_cycle_debug_focus()
+				get_viewport().set_input_as_handled()
+			KEY_F12:
+				_debug_spawn_random_hazard()
 				get_viewport().set_input_as_handled()
 
 
@@ -463,6 +483,15 @@ func _debug_spawn_order() -> void:
 			print("[Debug F5] OrderManager created order '%s'" % ord.order_id)
 
 
+func _debug_spawn_random_hazard() -> void:
+	if hazard_manager and is_instance_valid(hazard_manager):
+		var h: BaseHazard = hazard_manager.try_spawn_hazard()
+		if h:
+			print("[Debug F12] Spawned hazard: %s (%s) at %v" % [h.hazard_name, h.hazard_type, h.global_position])
+		else:
+			print("[Debug F12] HazardManager skipped spawn (at max capacity).")
+
+
 func _debug_dump_state() -> void:
 	print("\n================= WORKSHOP STATE DUMP =================")
 	_clean_active_players()
@@ -500,6 +529,15 @@ func _debug_dump_state() -> void:
 		print("OrderSpawner: Active=%s | Interval=%.1fs | Total Spawned=%d" % [
 			order_spawner.is_spawning(), order_spawner.get_current_interval(), order_spawner.get_total_spawned()
 		])
+
+	if hazard_manager and is_instance_valid(hazard_manager):
+		print("HazardManager: Active=%s | Interval=%.1fs | Active Hazards=%d" % [
+			hazard_manager.is_hazard_active(), hazard_manager.get_current_interval(), hazard_manager.get_active_hazard_count()
+		])
+		for h in hazard_manager.get_active_hazards():
+			print("  - Hazard: %s (%s) at %v | State: %s" % [
+				h.hazard_name, h.hazard_type, h.global_position, BaseHazard.HazardState.keys()[h.current_state]
+			])
 
 	print("Stations:")
 	for st in get_all_stations():

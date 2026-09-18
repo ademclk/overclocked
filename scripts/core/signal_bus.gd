@@ -42,3 +42,8 @@ signal carried_item_changed(item_name: String)
 # Round Flow Signals
 signal round_started
 signal round_ended(total_score: int, total_stars: int)
+
+# Hazard Signals (Phase 3)
+signal hazard_activated(hazard_name: String, hazard_type: String)
+signal hazard_cleared(hazard_name: String)
+signal hazard_expired(hazard_name: String)

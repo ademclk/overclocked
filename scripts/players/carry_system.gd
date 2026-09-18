@@ -68,6 +68,7 @@ func pick_up(item: Carriable) -> void:
 		item.trigger_claim_flash(flash_color)
 
 	held_item = item
+	item.visible = true
 	item.pick_up(player)
 
 	# Reparent item to carry position for visual attachment
@@ -123,6 +124,7 @@ func place_on_station(station: Node) -> void:
 	if item.get_parent():
 		item.get_parent().remove_child(item)
 
+	item.visible = true
 	item.place_on(station)
 	item_placed.emit(item, station)
 

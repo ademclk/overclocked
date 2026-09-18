@@ -159,6 +159,11 @@ func needs_software() -> bool:
 ## Overrides Carriable.pick_up to disable ground interaction zone
 func pick_up(player: PlayerCharacter) -> void:
 	super.pick_up(player)
+	visible = true
+	if device_mesh:
+		device_mesh.visible = true
+	if device_label:
+		device_label.visible = true
 	if interaction_zone:
 		interaction_zone.is_interactable = false
 
@@ -166,6 +171,11 @@ func pick_up(player: PlayerCharacter) -> void:
 ## Overrides Carriable.drop to enable ground interaction zone
 func drop(drop_position: Vector3) -> void:
 	super.drop(drop_position)
+	visible = true
+	if device_mesh:
+		device_mesh.visible = true
+	if device_label:
+		device_label.visible = true
 	if interaction_zone:
 		interaction_zone.is_interactable = true
 
@@ -173,6 +183,11 @@ func drop(drop_position: Vector3) -> void:
 ## Overrides Carriable.place_on to disable ground interaction zone
 func place_on(station: Node) -> void:
 	super.place_on(station)
+	visible = true
+	if device_mesh:
+		device_mesh.visible = true
+	if device_label:
+		device_label.visible = true
 	if interaction_zone:
 		interaction_zone.is_interactable = false
 

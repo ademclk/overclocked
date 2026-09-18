@@ -61,3 +61,10 @@ const DEFAULT_INTERACTION_DISTANCE: float = 1.6
 const DEFAULT_PLAYER_MOVE_SPEED: float = 6.0
 const DEFAULT_ORDER_TIMEOUT_SECONDS: float = 60.0
 
+# Hazard Configuration (Phase 3)
+const DEFAULT_OVERHEAT_TIME: float = 20.0       # Seconds before device overheats
+const DEFAULT_SURGE_DURATION: float = 15.0       # Power surge duration
+const DEFAULT_SPILL_SLOW_FACTOR: float = 0.45    # Player speed multiplier in spill
+const DEFAULT_SPILL_CLEAR_TIME: float = 2.0      # Seconds to mop up a spill
+const DEFAULT_SURGE_CLEAR_TIME: float = 3.0      # Seconds to fix a surge
+

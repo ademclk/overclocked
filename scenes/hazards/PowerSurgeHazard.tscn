@@ -1,0 +1,56 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/hazards/power_surge_hazard.gd" id="1_surge"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="2_interact"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hazard"]
+size = Vector3(1.5, 1.5, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_warning"]
+albedo_color = Color(0.2, 0.6, 1, 0.9)
+emission_enabled = true
+emission = Color(0.3, 0.8, 1, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_warning"]
+material = SubResource("StandardMaterial3D_warning")
+top_radius = 0.3
+bottom_radius = 0.05
+height = 0.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
+radius = 1.8
+
+[node name="PowerSurgeHazard" type="Area3D"]
+collision_layer = 16
+collision_mask = 2
+script = ExtResource("1_surge")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_hazard")
+
+[node name="HazardVisual" type="Node3D" parent="."]
+
+[node name="HazardLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+billboard = 1
+text = "⚡ POWER SURGE"
+font_size = 28
+outline_size = 3
+modulate = Color(0.4, 0.7, 1, 1)
+
+[node name="WarningIndicator" type="Node3D" parent="."]
+visible = false
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="WarningIndicator"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("CylinderMesh_warning")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("2_interact")
+interaction_prompt = "Clear Power Surge"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("SphereShape3D_interact")

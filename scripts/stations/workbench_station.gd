@@ -17,6 +17,7 @@ func _ready() -> void:
 	station_type = "workbench"
 	processing_time = work_time
 	accepted_device_states = ["DIAGNOSED", "DISASSEMBLED", "PART_REPLACED"]
+	add_to_group("workbenches")
 	super._ready()
 
 
@@ -45,6 +46,9 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 		return carry.can_pick_up()
 
 	# Case 3: Device on bench
+	if placed_device.has_meta("is_overheated"):
+		return carry.can_pick_up()
+
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
@@ -84,6 +88,11 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 	if not placed_device.has_method("get_repair_state"):
 		return "Pick Up Device"
 
+	if placed_device.has_meta("is_overheated"):
+		if carry.can_pick_up():
+			return "Pick Up Overheated Device (Cool Down)"
+		return "Hands Full - Cannot Cool Device"
+
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
@@ -116,6 +125,8 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if not player or not player.carry_system:
 		return
 
+	var carry: CarrySystem = player.carry_system
+
 	# Branch 1: Bench is empty -> Try place device
 	if not placed_device:
 		_try_place_device(player)
@@ -126,14 +137,22 @@ func _on_interacted(player: PlayerCharacter) -> void:
 		_try_pick_up(player)
 		return
 
-	# Branch 3: Device multi-step pipeline
+	# Branch 3: Overheated device pickup
+	if placed_device.has_meta("is_overheated"):
+		_try_pick_up(player)
+		return
+
+	# Branch 4: Device multi-step pipeline
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
 			set_active_user(player)
 			_start_disassembly()
 		"DISASSEMBLED":
-			_try_install_part(player)
+			if carry.is_carrying():
+				_try_install_part(player)
+			else:
+				_try_pick_up(player)
 		"PART_REPLACED":
 			_try_reassemble(player)
 		"REASSEMBLED":
