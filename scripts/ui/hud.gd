@@ -18,12 +18,26 @@ const COLOR_TIMER_CRITICAL: Color = Color(0.95, 0.25, 0.20, 1.0)  # < 20%
 const COLOR_STAR_EARNED: Color = Color(1.0, 0.85, 0.2, 1.0)
 const COLOR_STAR_EMPTY: Color = Color(0.35, 0.38, 0.45, 1.0)
 
-# Nodes matching Phase 1G Scene Tree specification
+# Nodes matching Phase 1G & 2G Scene Tree specification
 @onready var order_panel: VBoxContainer = $OrderPanel
 @onready var order_entry_template: HBoxContainer = $OrderPanel/OrderEntry
-@onready var carried_item_panel: HBoxContainer = $CarriedItemPanel
-@onready var carried_item_icon: TextureRect = $CarriedItemPanel/ItemIcon
-@onready var carried_item_name: Label = $CarriedItemPanel/ItemName
+
+# Multiplayer carried items panel
+@onready var carried_items_panel: HBoxContainer = get_node_or_null("CarriedItemsPanel") as HBoxContainer
+
+# Backward compatibility references for Phase 1
+@onready var carried_item_panel: HBoxContainer = get_node_or_null("CarriedItemPanel") as HBoxContainer
+@onready var carried_item_icon: TextureRect = (
+	get_node_or_null("CarriedItemPanel/ItemIcon") as TextureRect
+	if has_node("CarriedItemPanel/ItemIcon")
+	else null
+)
+@onready var carried_item_name: Label = (
+	get_node_or_null("CarriedItemPanel/ItemName") as Label
+	if has_node("CarriedItemPanel/ItemName")
+	else null
+)
+
 @onready var score_panel: HBoxContainer = $ScorePanel
 @onready var star_display: HBoxContainer = $ScorePanel/StarDisplay
 @onready var score_label: Label = $ScorePanel/ScoreLabel
@@ -41,6 +55,7 @@ const COLOR_STAR_EMPTY: Color = Color(0.35, 0.38, 0.45, 1.0)
 )
 
 var _tracked_player: PlayerCharacter = null
+var _tracked_players: Array[PlayerCharacter] = []
 var _order_manager: OrderManager = null
 
 # Active order UI entries: Order -> HBoxContainer
@@ -52,17 +67,19 @@ var current_stars: int = 0
 
 func _ready() -> void:
 	_connect_signal_bus()
+	_setup_carry_slots()
 	_update_star_display(0)
 	_update_score_display(0)
 	_update_carried_item()
 	_update_interaction_prompt()
 	_update_repair_progress(null)
 
-	# Auto-discover player and order manager if not explicitly set via setup()
+	# Auto-discover player(s) and order manager if not explicitly set via setup()
 	_auto_discover_dependencies()
 
 
 func _process(_delta: float) -> void:
+	_clean_tracked_players()
 	_update_interaction_prompt()
 	_update_carried_item()
 	_update_active_orders()
@@ -77,38 +94,138 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 
 
-## Initializes HUD with specific player and order manager instances
-func setup(player: PlayerCharacter = null, order_manager: OrderManager = null) -> void:
-	if player:
-		_set_tracked_player(player)
+## Initializes HUD with specific player(s) and order manager instances
+func setup(players_or_player: Variant = null, order_manager: OrderManager = null) -> void:
+	if players_or_player is Array:
+		var list: Array[PlayerCharacter] = []
+		for p in players_or_player:
+			if p is PlayerCharacter and is_instance_valid(p):
+				list.append(p as PlayerCharacter)
+		setup_multiplayer(list, order_manager)
+	elif players_or_player is PlayerCharacter:
+		setup_multiplayer([players_or_player as PlayerCharacter], order_manager)
+	elif order_manager:
+		_set_order_manager(order_manager)
+
+
+## Setup with multiple players
+func setup_multiplayer(players: Array[PlayerCharacter], order_manager: OrderManager = null) -> void:
+	for p in _tracked_players:
+		if is_instance_valid(p):
+			_unbind_player_signals(p)
+
+	_tracked_players.clear()
+	for p in players:
+		if p and is_instance_valid(p) and not _tracked_players.has(p):
+			_tracked_players.append(p)
+			_bind_player_signals(p)
+
+	# Set first player as primary (for backward compatibility)
+	if not _tracked_players.is_empty():
+		_tracked_player = _tracked_players[0]
+	else:
+		_tracked_player = null
 
 	if order_manager:
 		_set_order_manager(order_manager)
 
-
-## Sets and binds to a specific PlayerCharacter
-func _set_tracked_player(player: PlayerCharacter) -> void:
-	if _tracked_player == player:
-		return
-
-	if _tracked_player and is_instance_valid(_tracked_player):
-		if _tracked_player.carry_system:
-			if _tracked_player.carry_system.item_picked.is_connected(_on_item_picked):
-				_tracked_player.carry_system.item_picked.disconnect(_on_item_picked)
-			if _tracked_player.carry_system.item_dropped.is_connected(_on_item_dropped):
-				_tracked_player.carry_system.item_dropped.disconnect(_on_item_dropped)
-			if _tracked_player.carry_system.item_placed.is_connected(_on_item_placed):
-				_tracked_player.carry_system.item_placed.disconnect(_on_item_placed)
-
-	_tracked_player = player
-
-	if _tracked_player and _tracked_player.carry_system:
-		_tracked_player.carry_system.item_picked.connect(_on_item_picked)
-		_tracked_player.carry_system.item_dropped.connect(_on_item_dropped)
-		_tracked_player.carry_system.item_placed.connect(_on_item_placed)
-
+	_setup_carry_slots()
 	_update_carried_item()
 	_update_interaction_prompt()
+
+
+func set_tracked_players(players: Array[PlayerCharacter]) -> void:
+	setup_multiplayer(players, _order_manager)
+
+
+func add_tracked_player(player: PlayerCharacter) -> void:
+	if not player or not is_instance_valid(player):
+		return
+	if _tracked_players.has(player):
+		return
+	_tracked_players.append(player)
+	_bind_player_signals(player)
+	if _tracked_player == null:
+		_tracked_player = player
+	_setup_carry_slots()
+	_update_carried_item()
+	_update_interaction_prompt()
+
+
+func remove_tracked_player(player: PlayerCharacter) -> void:
+	if not player:
+		return
+	if _tracked_players.has(player):
+		_unbind_player_signals(player)
+		_tracked_players.erase(player)
+	if _tracked_player == player:
+		_tracked_player = _tracked_players[0] if not _tracked_players.is_empty() else null
+	_setup_carry_slots()
+	_update_carried_item()
+	_update_interaction_prompt()
+
+
+func get_tracked_players() -> Array[PlayerCharacter]:
+	_clean_tracked_players()
+	return _tracked_players.duplicate()
+
+
+## Sets and binds to a specific single PlayerCharacter (backward compatibility)
+func _set_tracked_player(player: PlayerCharacter) -> void:
+	if player:
+		setup_multiplayer([player], _order_manager)
+	else:
+		for p in _tracked_players:
+			if is_instance_valid(p):
+				_unbind_player_signals(p)
+		_tracked_players.clear()
+		_tracked_player = null
+		_setup_carry_slots()
+		_update_carried_item()
+		_update_interaction_prompt()
+
+
+func _bind_player_signals(player: PlayerCharacter) -> void:
+	if not player or not is_instance_valid(player):
+		return
+	if player.carry_system:
+		if not player.carry_system.item_picked.is_connected(_on_any_item_picked):
+			player.carry_system.item_picked.connect(_on_any_item_picked)
+		if not player.carry_system.item_dropped.is_connected(_on_any_item_dropped):
+			player.carry_system.item_dropped.connect(_on_any_item_dropped)
+		if not player.carry_system.item_placed.is_connected(_on_any_item_placed):
+			player.carry_system.item_placed.connect(_on_any_item_placed)
+
+
+func _unbind_player_signals(player: PlayerCharacter) -> void:
+	if not player or not is_instance_valid(player):
+		return
+	if player.carry_system:
+		if player.carry_system.item_picked.is_connected(_on_any_item_picked):
+			player.carry_system.item_picked.disconnect(_on_any_item_picked)
+		if player.carry_system.item_dropped.is_connected(_on_any_item_dropped):
+			player.carry_system.item_dropped.disconnect(_on_any_item_dropped)
+		if player.carry_system.item_placed.is_connected(_on_any_item_placed):
+			player.carry_system.item_placed.disconnect(_on_any_item_placed)
+		if player.carry_system.item_picked.is_connected(_on_item_picked):
+			player.carry_system.item_picked.disconnect(_on_item_picked)
+		if player.carry_system.item_dropped.is_connected(_on_item_dropped):
+			player.carry_system.item_dropped.disconnect(_on_item_dropped)
+		if player.carry_system.item_placed.is_connected(_on_item_placed):
+			player.carry_system.item_placed.disconnect(_on_item_placed)
+
+
+func _clean_tracked_players() -> void:
+	var removed: bool = false
+	for i in range(_tracked_players.size() - 1, -1, -1):
+		if not is_instance_valid(_tracked_players[i]):
+			_tracked_players.remove_at(i)
+			removed = true
+	if _tracked_player and not is_instance_valid(_tracked_player):
+		_tracked_player = _tracked_players[0] if not _tracked_players.is_empty() else null
+		removed = true
+	if removed:
+		_setup_carry_slots()
 
 
 ## Sets and binds to a specific OrderManager
@@ -145,6 +262,7 @@ func _connect_signal_bus() -> void:
 		return
 
 	SignalBus.player_joined.connect(_on_bus_player_joined)
+	SignalBus.player_left.connect(_on_bus_player_left)
 	SignalBus.order_spawned.connect(_on_bus_order_spawned)
 	SignalBus.order_completed.connect(_on_bus_order_completed)
 	SignalBus.order_expired.connect(_on_bus_order_expired)
@@ -157,21 +275,68 @@ func _connect_signal_bus() -> void:
 
 
 func _auto_discover_dependencies() -> void:
-	if not _tracked_player:
-		var tree := get_tree()
-		if tree:
-			var players: Array[Node] = tree.get_nodes_in_group("players")
-			for node: Node in players:
-				if node is PlayerCharacter and is_instance_valid(node):
-					_set_tracked_player(node as PlayerCharacter)
+	var tree := get_tree()
+	if not tree:
+		return
+
+	var players_in_tree: Array[Node] = tree.get_nodes_in_group("players")
+	var found_players: Array[PlayerCharacter] = []
+	for node: Node in players_in_tree:
+		if node is PlayerCharacter and is_instance_valid(node) and not node.is_queued_for_deletion():
+			found_players.append(node as PlayerCharacter)
+
+	found_players.sort_custom(func(a: PlayerCharacter, b: PlayerCharacter) -> bool:
+		return a.player_index < b.player_index
+	)
+
+	if not found_players.is_empty():
+		var needs_update: bool = found_players.size() != _tracked_players.size()
+		if not needs_update:
+			for i in range(found_players.size()):
+				if found_players[i] != _tracked_players[i]:
+					needs_update = true
 					break
+		if needs_update:
+			setup_multiplayer(found_players, _order_manager)
 
 	if not _order_manager:
-		var tree := get_tree()
-		if tree:
-			var mgr: Node = tree.get_first_node_in_group("order_managers")
-			if mgr is OrderManager:
-				_set_order_manager(mgr as OrderManager)
+		var mgr: Node = tree.get_first_node_in_group("order_managers")
+		if mgr is OrderManager:
+			_set_order_manager(mgr as OrderManager)
+
+
+## Configures slot visibility and colors based on tracked players
+func _setup_carry_slots() -> void:
+	if not carried_items_panel:
+		return
+
+	var count: int = _tracked_players.size()
+	for i in range(Constants.MAX_PLAYERS):
+		var slot_name: String = "P%dCarrySlot" % (i + 1)
+		var slot: Control = carried_items_panel.get_node_or_null(slot_name) as Control
+		if not slot:
+			continue
+
+		var is_active: bool = (i < count)
+		slot.visible = is_active
+
+		if is_active:
+			var player: PlayerCharacter = _tracked_players[i]
+			var player_color: Color = (
+				player.get_player_color()
+				if player.has_method("get_player_color")
+				else (
+					Constants.PLAYER_COLORS[player.player_index % Constants.PLAYER_COLORS.size()]
+					if not Constants.PLAYER_COLORS.is_empty()
+					else Color.WHITE
+				)
+			)
+			var tag_label: Label = slot.get_node_or_null("PlayerTag") as Label
+			if not tag_label:
+				tag_label = slot.find_child("PlayerTag", true, false) as Label
+			if tag_label:
+				tag_label.text = "● P%d" % (player.player_index + 1)
+				tag_label.modulate = player_color
 
 
 ## Updates contextual interaction prompt text and visibility
@@ -179,58 +344,139 @@ func _update_interaction_prompt() -> void:
 	if not interaction_prompt or not prompt_label:
 		return
 
-	if not _tracked_player or not _tracked_player.interaction_system:
+	var candidates: Array[PlayerCharacter] = []
+	if not _tracked_players.is_empty():
+		candidates = _tracked_players
+	elif _tracked_player and is_instance_valid(_tracked_player):
+		candidates = [_tracked_player]
+
+	if candidates.is_empty():
 		interaction_prompt.visible = false
 		prompt_label.text = ""
 		return
 
-	var focus: Interactable = _tracked_player.interaction_system.get_current_focus()
-	if focus:
-		var action_name: String = InputHelper.get_action_prompt(InputHelper.ACTION_INTERACT)
-		var prompt_text: String = focus.get_prompt_text(_tracked_player)
+	var best_player: PlayerCharacter = null
+	var best_focus: Interactable = null
+	var min_distance: float = INF
 
-		if prompt_text.is_empty():
-			interaction_prompt.visible = false
-			prompt_label.text = ""
-		elif not focus.can_interact(_tracked_player):
-			prompt_label.text = prompt_text
-			interaction_prompt.visible = true
-		elif prompt_text.begins_with("Press "):
-			prompt_label.text = prompt_text
-			interaction_prompt.visible = true
-		else:
-			prompt_label.text = "Press %s to %s" % [action_name, prompt_text]
-			interaction_prompt.visible = true
-	else:
+	for player in candidates:
+		if not player or not is_instance_valid(player) or not player.interaction_system:
+			continue
+		var focus: Interactable = player.interaction_system.get_current_focus()
+		if focus and is_instance_valid(focus):
+			var dist: float = 0.0
+			if focus is Node3D:
+				dist = player.global_position.distance_to((focus as Node3D).global_position)
+			elif focus.get_parent() is Node3D:
+				dist = player.global_position.distance_to((focus.get_parent() as Node3D).global_position)
+			if dist < min_distance:
+				min_distance = dist
+				best_player = player
+				best_focus = focus
+
+	if not best_player or not best_focus:
 		interaction_prompt.visible = false
 		prompt_label.text = ""
+		return
+
+	var prompt_text: String = best_focus.get_prompt_text(best_player)
+	if prompt_text.is_empty():
+		interaction_prompt.visible = false
+		prompt_label.text = ""
+	elif not best_focus.can_interact(best_player):
+		prompt_label.text = prompt_text
+		interaction_prompt.visible = true
+	elif prompt_text.begins_with("Press "):
+		prompt_label.text = prompt_text
+		interaction_prompt.visible = true
+	else:
+		var action_prompt: String = MultiplayerInput.get_player_action_prompt(
+			best_player.player_index, MultiplayerInput.BASE_INTERACT
+		)
+		prompt_label.text = "Press %s to %s" % [action_prompt, prompt_text]
+		interaction_prompt.visible = true
 
 
 ## Updates carried item label and repair progress indicator
 func _update_carried_item() -> void:
-	if not carried_item_name:
-		return
+	_update_all_carried_items()
 
-	if _tracked_player and _tracked_player.carry_system and _tracked_player.carry_system.is_carrying():
-		var item: Carriable = _tracked_player.carry_system.get_held_item()
+	var primary_player: PlayerCharacter = (
+		_tracked_player
+		if (_tracked_player and is_instance_valid(_tracked_player))
+		else (_tracked_players[0] if not _tracked_players.is_empty() else null)
+	)
+
+	var primary_device: Device = null
+	if primary_player and primary_player.carry_system and primary_player.carry_system.is_carrying():
+		var item: Carriable = primary_player.carry_system.get_held_item()
 		if item and is_instance_valid(item):
 			var display_text: String = item.item_name
 			if item is Device:
 				var dev := item as Device
+				primary_device = dev
 				display_text += " [%s]" % dev.get_repair_state()
 				if dev.is_diagnosed and dev.assigned_fault:
 					display_text += " (%s)" % dev.assigned_fault.fault_name
-				_update_repair_progress(dev)
-			else:
-				_update_repair_progress(null)
-
-			carried_item_name.text = display_text
+			if carried_item_name:
+				carried_item_name.text = display_text
 			if carried_item_panel:
-				carried_item_panel.visible = true
-			return
+				carried_item_panel.visible = (_tracked_players.size() <= 1 and not carried_items_panel)
+	else:
+		if carried_item_name:
+			carried_item_name.text = "—"
 
-	carried_item_name.text = "—"
-	_update_repair_progress(null)
+	var active_dev: Device = primary_device
+	if not active_dev:
+		for player in _tracked_players:
+			if player and is_instance_valid(player) and player.carry_system and player.carry_system.is_carrying():
+				var held := player.carry_system.get_held_item()
+				if held is Device:
+					active_dev = held as Device
+					break
+	_update_repair_progress(active_dev)
+
+
+## Updates carried items for all active player slots
+func _update_all_carried_items() -> void:
+	if not carried_items_panel:
+		return
+
+	for i in range(Constants.MAX_PLAYERS):
+		var slot_name: String = "P%dCarrySlot" % (i + 1)
+		var slot: Control = carried_items_panel.get_node_or_null(slot_name) as Control
+		if not slot:
+			continue
+
+		if i >= _tracked_players.size():
+			slot.visible = false
+			continue
+
+		slot.visible = true
+		var player: PlayerCharacter = _tracked_players[i]
+		if not player or not is_instance_valid(player):
+			continue
+
+		var item_label: Label = slot.get_node_or_null("ItemName") as Label
+		if not item_label:
+			item_label = slot.find_child("ItemName", true, false) as Label
+		if not item_label:
+			continue
+
+		if player.carry_system and player.carry_system.is_carrying():
+			var item: Carriable = player.carry_system.get_held_item()
+			if item and is_instance_valid(item):
+				var text: String = item.item_name
+				if item is Device:
+					var dev := item as Device
+					text += " [%s]" % dev.get_repair_state()
+					if dev.is_diagnosed and dev.assigned_fault:
+						text += " (%s)" % dev.assigned_fault.fault_name
+				item_label.text = text
+			else:
+				item_label.text = "—"
+		else:
+			item_label.text = "—"
 
 
 ## Updates repair progress label based on carried or active device
@@ -407,6 +653,18 @@ func show_order_completed_animation(stars: int, score: int) -> void:
 
 
 # Signal Handlers
+func _on_any_item_picked(_item: Carriable) -> void:
+	_update_carried_item()
+
+
+func _on_any_item_dropped(_item: Carriable) -> void:
+	_update_carried_item()
+
+
+func _on_any_item_placed(_item: Carriable, _station: Node) -> void:
+	_update_carried_item()
+
+
 func _on_item_picked(_item: Carriable) -> void:
 	_update_carried_item()
 
@@ -439,9 +697,16 @@ func _on_order_expired(order: Order) -> void:
 	_remove_order_entry(order)
 
 
-func _on_bus_player_joined(player_id: int) -> void:
-	if not _tracked_player and player_id == 0:
-		_auto_discover_dependencies()
+func _on_bus_player_joined(_player_id: int) -> void:
+	_auto_discover_dependencies()
+
+
+func _on_bus_player_left(player_id: int) -> void:
+	for i in range(_tracked_players.size() - 1, -1, -1):
+		var p: PlayerCharacter = _tracked_players[i]
+		if is_instance_valid(p) and p.player_index == player_id:
+			remove_tracked_player(p)
+			break
 
 
 func _on_bus_order_spawned(_order_id: String, _device_type: String) -> void:

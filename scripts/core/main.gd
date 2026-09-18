@@ -8,8 +8,11 @@ const DEFAULT_WORKSHOP_SCENE: PackedScene = preload("res://scenes/workshop/Works
 
 @export var default_level: PackedScene = DEFAULT_WORKSHOP_SCENE
 @export var debug_overlay_visible: bool = true
+@export var show_lobby: bool = false
+@export var lobby_scene: PackedScene = preload("res://scenes/ui/LobbyScreen.tscn")
 
 var current_level: Node = null
+var lobby_screen: LobbyScreen = null
 
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var camera_rig: CameraRig = $CameraRig
@@ -24,12 +27,48 @@ func _ready() -> void:
 	elif default_level:
 		load_level(default_level)
 
-	if GameManager.current_state == GameState.State.MENU:
-		GameManager.change_state(GameState.State.PLAYING)
+	if show_lobby:
+		open_lobby()
+	else:
+		if GameManager.current_state == GameState.State.MENU:
+			GameManager.change_state(GameState.State.PLAYING)
 
 	_setup_camera()
 	_setup_hud()
 	_update_debug_label()
+
+
+func open_lobby() -> void:
+	if lobby_screen:
+		lobby_screen.visible = true
+		GameManager.change_state(GameState.State.MENU)
+		return
+	if lobby_scene and ui:
+		lobby_screen = lobby_scene.instantiate() as LobbyScreen
+		ui.add_child(lobby_screen)
+		lobby_screen.all_players_ready.connect(_on_lobby_all_players_ready)
+		lobby_screen.lobby_cancelled.connect(_on_lobby_cancelled)
+		GameManager.change_state(GameState.State.MENU)
+
+
+func _on_lobby_all_players_ready(player_count: int, _device_assignments: Dictionary) -> void:
+	if lobby_screen:
+		lobby_screen.visible = false
+	if current_level:
+		if current_level.has_method("despawn_all_players") and current_level.has_method("spawn_player"):
+			current_level.call("despawn_all_players")
+			for i in range(player_count):
+				current_level.call("spawn_player", i)
+	_setup_camera()
+	_setup_hud()
+	GameManager.change_state(GameState.State.PLAYING)
+
+
+func _on_lobby_cancelled() -> void:
+	if lobby_screen:
+		lobby_screen.visible = false
+	if GameManager.current_state == GameState.State.MENU:
+		GameManager.change_state(GameState.State.PLAYING)
 
 
 func _process(_delta: float) -> void:
@@ -126,22 +165,33 @@ func _setup_camera() -> void:
 func _setup_hud() -> void:
 	if not hud:
 		return
-	var player: PlayerCharacter = null
+	var players: Array[PlayerCharacter] = []
 	var order_mgr: OrderManager = null
 	if current_level:
-		if current_level.has_method("get_player"):
-			player = current_level.call("get_player", 0)
+		if current_level.has_method("get_active_players"):
+			var active: Array = current_level.call("get_active_players")
+			for p in active:
+				if p is PlayerCharacter and is_instance_valid(p):
+					players.append(p as PlayerCharacter)
+		elif current_level.has_method("get_player"):
+			var p0: PlayerCharacter = current_level.call("get_player", 0)
+			if p0:
+				players.append(p0)
 		elif current_level.has_node("Entities/PlayerCharacter"):
-			player = current_level.get_node("Entities/PlayerCharacter") as PlayerCharacter
+			var p: PlayerCharacter = current_level.get_node("Entities/PlayerCharacter") as PlayerCharacter
+			if p:
+				players.append(p)
 		elif current_level.has_node("PlayerCharacter"):
-			player = current_level.get_node("PlayerCharacter") as PlayerCharacter
+			var p: PlayerCharacter = current_level.get_node("PlayerCharacter") as PlayerCharacter
+			if p:
+				players.append(p)
 
 		if "order_manager" in current_level and current_level.order_manager:
 			order_mgr = current_level.order_manager
 		elif current_level.has_node("OrderManager"):
 			order_mgr = current_level.get_node("OrderManager") as OrderManager
 
-	hud.setup(player, order_mgr)
+	hud.setup(players, order_mgr)
 
 
 func _unhandled_input(event: InputEvent) -> void:

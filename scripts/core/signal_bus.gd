@@ -12,6 +12,7 @@ signal game_paused(is_paused: bool)
 # Player Signals
 signal player_joined(player_id: int)
 signal player_left(player_id: int)
+signal player_device_assigned(player_index: int, device_id: int)
 
 # Workshop & Interaction Signals
 signal station_interacted(station_name: String, player_id: int)

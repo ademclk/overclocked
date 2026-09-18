@@ -85,7 +85,10 @@ static func get_player_device_type(player_index: int) -> InputHelper.DeviceType:
 	var device_id: int = device_assignments.get(player_index, -1)
 	if device_id < 0:
 		return InputHelper.DeviceType.KEYBOARD
-	return InputHelper.detect_device_type(device_id)
+	var detected := InputHelper.detect_device_type(device_id)
+	if detected == InputHelper.DeviceType.KEYBOARD:
+		return InputHelper.DeviceType.GENERIC_GAMEPAD
+	return detected
 
 
 ## Returns the prompt string for a player's action (e.g., "[E]" or "(A)")

@@ -6,6 +6,7 @@ extends Node
 var current_state: GameState.State = GameState.State.MENU
 var previous_state: GameState.State = GameState.State.MENU
 var registered_player_count: int = 0
+var registered_device_assignments: Dictionary = {}
 
 
 func _ready() -> void:

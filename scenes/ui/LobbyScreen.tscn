@@ -1,0 +1,372 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/lobby_screen.gd" id="1_lobby"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
+content_margin_left = 12.0
+content_margin_top = 16.0
+content_margin_right = 12.0
+content_margin_bottom = 16.0
+bg_color = Color(0.1, 0.12, 0.16, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.3, 0.4, 0.4)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.2, 0.7, 0.35, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="LobbyScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lobby")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.09, 0.12, 0.92)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 40.0
+offset_right = 300.0
+offset_bottom = 90.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+text = "OVERCLOCKED — PLAYER LOBBY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ConnectedInfo" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 95.0
+offset_right = 400.0
+offset_bottom = 125.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 0.8)
+theme_override_font_sizes/font_size = 14
+text = "Connected Controllers: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SlotsContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -460.0
+offset_top = -140.0
+offset_right = 460.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="PlayerSlot1" type="PanelContainer" parent="SlotsContainer"]
+custom_minimum_size = Vector2(210, 260)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="VBox" type="VBoxContainer" parent="SlotsContainer/PlayerSlot1"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ColorBadge" type="ColorRect" parent="SlotsContainer/PlayerSlot1/VBox"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.6, 1, 1)
+
+[node name="SlotLabel" type="Label" parent="SlotsContainer/PlayerSlot1/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "P1
+PRESS TO JOIN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeviceLabel" type="Label" parent="SlotsContainer/PlayerSlot1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "No Controller"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="SlotsContainer/PlayerSlot1/VBox"]
+layout_mode = 2
+
+[node name="ReadyIndicator" type="Label" parent="SlotsContainer/PlayerSlot1/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="SlotsContainer/PlayerSlot1/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.7)
+theme_override_font_sizes/font_size = 12
+text = "[Any Key to Join]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SlotButton" type="Button" parent="SlotsContainer/PlayerSlot1/VBox"]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Join"
+
+[node name="PlayerSlot2" type="PanelContainer" parent="SlotsContainer"]
+custom_minimum_size = Vector2(210, 260)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="VBox" type="VBoxContainer" parent="SlotsContainer/PlayerSlot2"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ColorBadge" type="ColorRect" parent="SlotsContainer/PlayerSlot2/VBox"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(1, 0.35, 0.25, 1)
+
+[node name="SlotLabel" type="Label" parent="SlotsContainer/PlayerSlot2/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "P2
+PRESS TO JOIN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeviceLabel" type="Label" parent="SlotsContainer/PlayerSlot2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "No Controller"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="SlotsContainer/PlayerSlot2/VBox"]
+layout_mode = 2
+
+[node name="ReadyIndicator" type="Label" parent="SlotsContainer/PlayerSlot2/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="SlotsContainer/PlayerSlot2/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.7)
+theme_override_font_sizes/font_size = 12
+text = "[Any Key to Join]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SlotButton" type="Button" parent="SlotsContainer/PlayerSlot2/VBox"]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Join"
+
+[node name="PlayerSlot3" type="PanelContainer" parent="SlotsContainer"]
+custom_minimum_size = Vector2(210, 260)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="VBox" type="VBoxContainer" parent="SlotsContainer/PlayerSlot3"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ColorBadge" type="ColorRect" parent="SlotsContainer/PlayerSlot3/VBox"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.3, 0.85, 0.35, 1)
+
+[node name="SlotLabel" type="Label" parent="SlotsContainer/PlayerSlot3/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "P3
+PRESS TO JOIN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeviceLabel" type="Label" parent="SlotsContainer/PlayerSlot3/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "No Controller"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="SlotsContainer/PlayerSlot3/VBox"]
+layout_mode = 2
+
+[node name="ReadyIndicator" type="Label" parent="SlotsContainer/PlayerSlot3/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="SlotsContainer/PlayerSlot3/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.7)
+theme_override_font_sizes/font_size = 12
+text = "[Any Key to Join]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SlotButton" type="Button" parent="SlotsContainer/PlayerSlot3/VBox"]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Join"
+
+[node name="PlayerSlot4" type="PanelContainer" parent="SlotsContainer"]
+custom_minimum_size = Vector2(210, 260)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="VBox" type="VBoxContainer" parent="SlotsContainer/PlayerSlot4"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ColorBadge" type="ColorRect" parent="SlotsContainer/PlayerSlot4/VBox"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(1, 0.75, 0.1, 1)
+
+[node name="SlotLabel" type="Label" parent="SlotsContainer/PlayerSlot4/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "P4
+PRESS TO JOIN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeviceLabel" type="Label" parent="SlotsContainer/PlayerSlot4/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "No Controller"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="SlotsContainer/PlayerSlot4/VBox"]
+layout_mode = 2
+
+[node name="ReadyIndicator" type="Label" parent="SlotsContainer/PlayerSlot4/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="SlotsContainer/PlayerSlot4/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.7)
+theme_override_font_sizes/font_size = 12
+text = "[Any Key to Join]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SlotButton" type="Button" parent="SlotsContainer/PlayerSlot4/VBox"]
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Join"
+
+[node name="InstructionLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -120.0
+offset_right = 380.0
+offset_bottom = -90.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 0.8)
+theme_override_font_sizes/font_size = 15
+text = "Press your device button to Join. Press Ready when set. All joined players must be Ready."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartPrompt" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -80.0
+offset_right = 300.0
+offset_bottom = -45.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "ALL PLAYERS READY! Press Start / Enter to begin!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -45.0
+offset_right = 90.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+disabled = true
+text = "START GAME"
