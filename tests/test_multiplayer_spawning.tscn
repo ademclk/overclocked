@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/test_multiplayer_spawning.gd" id="1_mp_spawning_test"]
+
+[node name="TestMultiplayerSpawning" type="Node"]
+script = ExtResource("1_mp_spawning_test")

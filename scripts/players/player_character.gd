@@ -35,6 +35,7 @@ var carry_system: CarrySystem = null
 
 
 func _ready() -> void:
+	add_to_group("players")
 	collision_layer = Constants.COLLISION_MASK_PLAYERS
 	collision_mask = (
 		Constants.COLLISION_MASK_WORLD

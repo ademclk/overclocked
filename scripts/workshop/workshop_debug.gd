@@ -11,6 +11,7 @@ const DEFAULT_DEVICE_SCENE: PackedScene = preload("res://scenes/devices/Device.t
 
 @export var auto_spawn_player: bool = true
 @export var auto_start_round: bool = true
+@export var player_count_override: int = 0
 @export var player_scene: PackedScene = DEFAULT_PLAYER_SCENE
 @export var default_device_data: DeviceData = DEFAULT_PHONE_DATA
 
@@ -65,14 +66,34 @@ func _ready() -> void:
 	_connect_order_pipeline()
 
 	if auto_spawn_player:
-		spawn_player(0)
+		_spawn_all_players()
 
 	if auto_start_round:
 		start_round()
 
 
+## Spawns players for all registered input slots
+func _spawn_all_players() -> void:
+	var player_count: int = _get_registered_player_count()
+	for i in range(player_count):
+		spawn_player(i)
+
+
+func _get_registered_player_count() -> int:
+	if player_count_override > 0:
+		return clampi(player_count_override, Constants.MIN_PLAYERS, Constants.MAX_PLAYERS)
+	if GameManager and "registered_player_count" in GameManager and GameManager.registered_player_count > 0:
+		return clampi(GameManager.registered_player_count, Constants.MIN_PLAYERS, Constants.MAX_PLAYERS)
+	var joypad_count: int = Input.get_connected_joypads().size()
+	return clampi(joypad_count + 1, Constants.MIN_PLAYERS, Constants.MAX_PLAYERS)
+
+
 ## Spawns a player character at the designated spawn marker.
 func spawn_player(player_index: int = 0) -> PlayerCharacter:
+	var existing: PlayerCharacter = get_player(player_index)
+	if existing and is_instance_valid(existing):
+		return existing
+
 	var scene_to_spawn: PackedScene = player_scene if player_scene != null else DEFAULT_PLAYER_SCENE
 	var player: PlayerCharacter = scene_to_spawn.instantiate() as PlayerCharacter
 	player.player_index = player_index
@@ -82,10 +103,53 @@ func spawn_player(player_index: int = 0) -> PlayerCharacter:
 	else:
 		add_child(player)
 
+	player.set_player_index(player_index)
 	player.global_position = get_spawn_position(player_index)
 	active_players.append(player)
 	SignalBus.player_joined.emit(player_index)
 	return player
+
+
+## Despawns the player with the given index and emits player_left
+func despawn_player(player_index: int) -> bool:
+	_clean_active_players()
+	for i in range(active_players.size() - 1, -1, -1):
+		var p: PlayerCharacter = active_players[i]
+		if p.player_index == player_index:
+			active_players.remove_at(i)
+			p.queue_free()
+			SignalBus.player_left.emit(player_index)
+			return true
+	return false
+
+
+## Despawns all currently active players
+func despawn_all_players() -> void:
+	_clean_active_players()
+	for i in range(active_players.size() - 1, -1, -1):
+		var p: PlayerCharacter = active_players[i]
+		var idx: int = p.player_index
+		active_players.remove_at(i)
+		p.queue_free()
+		SignalBus.player_left.emit(idx)
+
+
+## Returns all currently active and valid PlayerCharacter instances
+func get_active_players() -> Array[PlayerCharacter]:
+	_clean_active_players()
+	return active_players.duplicate()
+
+
+## Returns count of currently active and valid players
+func get_active_player_count() -> int:
+	_clean_active_players()
+	return active_players.size()
+
+
+func _clean_active_players() -> void:
+	for i in range(active_players.size() - 1, -1, -1):
+		if not is_instance_valid(active_players[i]):
+			active_players.remove_at(i)
 
 
 ## Starts the gameplay round and spawns an initial order
@@ -145,26 +209,27 @@ func _on_all_orders_complete() -> void:
 
 ## Returns the active player for single-player, or player at index
 func get_player(player_index: int = 0) -> PlayerCharacter:
+	_clean_active_players()
 	for player in active_players:
-		if is_instance_valid(player) and player.player_index == player_index:
+		if player.player_index == player_index:
 			return player
 	return null
 
 
 ## Returns the 3D spawn position for a given player index.
+## Supports graceful fallback if fewer spawn markers exist than players.
 func get_spawn_position(player_index: int = 0) -> Vector3:
 	var marker_name: String = "SpawnPoint_P%d" % (player_index + 1)
 	var marker: Marker3D = get_node_or_null(marker_name) as Marker3D
 	if marker:
 		return marker.global_position
 
-	# Fallbacks based on player index
-	match player_index:
-		0: return Vector3(1.5, 0.0, 3.0)
-		1: return Vector3(2.5, 0.0, 3.0)
-		2: return Vector3(1.5, 0.0, 3.8)
-		3: return Vector3(2.5, 0.0, 3.8)
-		_: return Vector3(1.5, 0.0, 3.0)
+	# Graceful fallback: If SpawnPoint_P1 exists, use as base reference, else default workshop coordinates
+	var p1_marker: Marker3D = get_node_or_null("SpawnPoint_P1") as Marker3D
+	var base_pos: Vector3 = p1_marker.global_position if p1_marker else Vector3(1.5, 0.0, 3.0)
+	var offset_x: float = float(player_index % 2) * 1.0
+	var offset_z: float = float(player_index / 2) * 0.8
+	return base_pos + Vector3(offset_x, 0.0, offset_z)
 
 
 ## Returns the workshop floor dimensions in meters (X = width, Y = depth).
@@ -239,6 +304,25 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F9:
 				_debug_dump_state()
 				get_viewport().set_input_as_handled()
+			KEY_F10:
+				_debug_spawn_additional_player()
+				get_viewport().set_input_as_handled()
+
+
+func _debug_spawn_additional_player() -> PlayerCharacter:
+	_clean_active_players()
+	var used_indices: Array[int] = []
+	for p in active_players:
+		used_indices.append(p.player_index)
+
+	for i in range(Constants.MAX_PLAYERS):
+		if not (i in used_indices):
+			var new_player := spawn_player(i)
+			print("[Debug F10] Spawned additional player P%d at %s" % [i + 1, new_player.global_position])
+			return new_player
+
+	print("[Debug F10] Maximum players (%d) already spawned." % Constants.MAX_PLAYERS)
+	return null
 
 
 func _debug_advance_device(target_state: RepairState.State) -> void:
@@ -321,14 +405,22 @@ func _debug_complete_order() -> void:
 
 func _debug_dump_state() -> void:
 	print("\n================= WORKSHOP STATE DUMP =================")
+	_clean_active_players()
 	print("Active Players: %d" % active_players.size())
-	var p: PlayerCharacter = get_player(0)
-	if p and p.carry_system:
-		var held: Carriable = p.carry_system.get_held_item()
-		var held_desc: String = held.item_name if held else "None"
-		if held is Device:
-			held_desc += " [%s]" % (held as Device).get_repair_state()
-		print("  Player 0 Carried Item: %s" % held_desc)
+	for p in active_players:
+		var held_desc: String = "None"
+		if p.carry_system and p.carry_system.is_carrying():
+			var held: Carriable = p.carry_system.get_held_item()
+			if held:
+				held_desc = held.item_name
+				if held is Device:
+					held_desc += " [%s]" % (held as Device).get_repair_state()
+		print("  Player %d (P%d) at %s | Carried: %s" % [
+			p.player_index,
+			p.player_index + 1,
+			p.global_position,
+			held_desc
+		])
 
 	if order_manager:
 		print("OrderManager: Active=%d, Completed=%d, Expired=%d | Score=%d, Stars=%d" % [
