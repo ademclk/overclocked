@@ -1291,12 +1291,12 @@ func _get_tool_spawn_position(index: int) -> Vector3:
 
 ### Tasks
 
-- [ ] 🎯 Parts shelf limited stock: finite parts per component type per round
-- [ ] 🎯 Wrong part detection: installing wrong component wastes time, doesn't advance state
-- [ ] 🎯 Visual stock indicator on parts shelf (shows remaining count)
-- [ ] 🎯 Player must identify correct part from diagnosis info
-- [ ] 💡 Parts delivery mid-round: a delivery box arrives, must be carried and unpacked
-- [ ] 💡 Parts shelf restocking via delivery boxes
+- [x] 🎯 Parts shelf limited stock: finite parts per component type per round
+- [x] 🎯 Wrong part detection: installing wrong component wastes time, doesn't advance state
+- [x] 🎯 Visual stock indicator on parts shelf (shows remaining count)
+- [x] 🎯 Player must identify correct part from diagnosis info
+- [x] 💡 Parts delivery mid-round: a delivery box arrives, must be carried and unpacked
+- [x] 💡 Parts shelf restocking via delivery boxes
 
 ### Parts Stock System
 
@@ -1780,13 +1780,13 @@ Rules:
 - [x] 💡 Wrong tool penalty: using wrong tool type wastes time
 
 ### 3D — Component Variety & Parts Stock
-- [ ] 🎯 `PartsShelf` stock tracking: `initial_stock_per_part = 3`
-- [ ] 🎯 Stock display on shelf (Label3D showing counts)
-- [ ] 🎯 Out-of-stock feedback when part unavailable
-- [ ] 🎯 Wrong part rejected at workbench with visual feedback
-- [ ] 🎯 Wrong part NOT consumed (stays in player's carry system)
-- [ ] 💡 `DeliveryBox` item: carry to shelf + interact to restock
-- [ ] 💡 Mid-round delivery box spawns at reception desk
+- [x] 🎯 `PartsShelf` stock tracking: `initial_stock_per_part = 3`
+- [x] 🎯 Stock display on shelf (Label3D showing counts)
+- [x] 🎯 Out-of-stock feedback when part unavailable
+- [x] 🎯 Wrong part rejected at workbench with visual feedback
+- [x] 🎯 Wrong part NOT consumed (stays in player's carry system)
+- [x] 💡 `DeliveryBox` item: carry to shelf + interact to restock
+- [x] 💡 Mid-round delivery box spawns at reception desk
 
 ### 3E — Integration & Testing
 - [ ] 🎯 All new nodes added to `Workshop_Debug.tscn`

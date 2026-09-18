@@ -154,7 +154,11 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 			return _has_required_tool(player)
 		"DISASSEMBLED":
 			if carry.is_carrying():
-				return _is_valid_replacement_part(placed_device, carry.get_held_item())
+				var held: Carriable = carry.get_held_item()
+				if held is ToolItem and _bench_tool == null:
+					return true
+				if held.item_type == "part":
+					return _is_valid_replacement_part(placed_device, held)
 			return false
 		"PART_REPLACED":
 			if not _has_required_tool(player):
@@ -225,10 +229,12 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 				var held: Carriable = carry.get_held_item()
 				if held is ToolItem and _bench_tool == null:
 					return "Place %s on Workbench" % held.item_name
-				if _is_valid_replacement_part(placed_device, held):
+				if held.item_type == "part":
 					var part_name: String = held.item_name if not held.item_name.is_empty() else "Replacement Part"
-					return "Install %s" % part_name
-				return "Wrong Replacement Part"
+					if _is_valid_replacement_part(placed_device, held):
+						return "Install %s" % part_name
+					return "Wrong Replacement Part"
+				return "Wrong Item"
 			return "Need Replacement Part"
 
 		"PART_REPLACED":
@@ -253,6 +259,11 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 
 func _on_interacted(player: PlayerCharacter) -> void:
 	if not can_player_interact(player):
+		if placed_device and placed_device.has_method("get_repair_state") and str(placed_device.get_repair_state()) == "DISASSEMBLED":
+			if player and player.carry_system and player.carry_system.is_carrying():
+				var held: Carriable = player.carry_system.get_held_item()
+				if held and held.item_type == "part":
+					_try_install_part(player)
 		return
 
 	super._on_interacted(player)
@@ -357,14 +368,20 @@ func _start_disassembly() -> void:
 	start_processing()
 
 
-## Helper: Installs carried component into disassembled device
+## Helper: Installs carried component into disassembled device, rejecting invalid parts
 func _try_install_part(player: PlayerCharacter) -> bool:
 	var carry: CarrySystem = player.carry_system
 	if not carry.is_carrying() or not placed_device:
 		return false
 
 	var part: Carriable = carry.get_held_item()
+	if not part or part.item_type != "part":
+		return false
+
 	if not _is_valid_replacement_part(placed_device, part):
+		# WRONG PART REJECTION
+		_flash_wrong_part()
+		SignalBus.hazard_activated.emit("Wrong Part", "wrong_part")
 		return false
 
 	set_active_user(player)
@@ -389,6 +406,24 @@ func _try_install_part(player: PlayerCharacter) -> bool:
 	current_state = StationState.OCCUPIED
 	_update_visual_state()
 	return true
+
+
+func _flash_wrong_part() -> void:
+	if station_label:
+		station_label.text = "✗ WRONG PART"
+		station_label.modulate = Color(1.0, 0.2, 0.2)
+		var tween := create_tween()
+		if tween:
+			tween.tween_interval(1.5)
+			tween.tween_callback(func() -> void:
+				if station_label and is_instance_valid(station_label):
+					station_label.text = station_name.to_upper()
+					station_label.modulate = Color.WHITE
+			)
+	if progress_label:
+		progress_label.visible = true
+		progress_label.text = "WRONG PART"
+		progress_label.modulate = Color(1.0, 0.2, 0.2)
 
 
 ## Helper: Starts reassembly processing

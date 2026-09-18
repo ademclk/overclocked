@@ -186,6 +186,10 @@ func start_round() -> void:
 	if workbench and "requires_tool" in workbench:
 		workbench.requires_tool = workbench_requires_tool
 
+	# Phase 3D: Initialize parts shelf stock
+	if parts_shelf and is_instance_valid(parts_shelf):
+		parts_shelf._init_stock()
+
 
 ## Connects OrderManager, ReceptionDesk, and DeliveryCounter into a unified pipeline
 func _connect_order_pipeline() -> void:
@@ -341,6 +345,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.ctrl_pressed and event.keycode == KEY_F7:
 			_debug_toggle_tool_requirement()
+			get_viewport().set_input_as_handled()
+			return
+		if event.ctrl_pressed and event.keycode == KEY_F8:
+			_debug_restock_shelf()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -515,6 +523,37 @@ func _debug_toggle_tool_requirement() -> void:
 	if workbench and "requires_tool" in workbench:
 		workbench.requires_tool = not workbench.requires_tool
 		print("[Debug Ctrl+F7] Workbench requires_tool toggled to: %s" % str(workbench.requires_tool))
+
+
+func _debug_restock_shelf() -> void:
+	if parts_shelf and is_instance_valid(parts_shelf):
+		parts_shelf.restock_all(3)
+		print("[Debug Ctrl+F8] Restocked all parts on PartsShelf to 3.")
+
+
+## Spawns a delivery box into the workshop (e.g. near the reception desk)
+func spawn_delivery_box(parts_dict: Dictionary = {}) -> DeliveryBox:
+	var box_scene: PackedScene = load("res://scenes/tools/DeliveryBox.tscn")
+	var box: DeliveryBox = null
+	if box_scene:
+		box = box_scene.instantiate() as DeliveryBox
+	if not box:
+		box = DeliveryBox.new()
+	if not parts_dict.is_empty():
+		box.contained_parts = parts_dict
+
+	var spawn_pos: Vector3 = Vector3(-1.0, 0.5, 3.5)
+	if reception_desk and is_instance_valid(reception_desk):
+		spawn_pos = reception_desk.global_position + Vector3(0.8, 0.0, 0.0)
+
+	if entities_container:
+		entities_container.add_child(box)
+	else:
+		add_child(box)
+
+	box.global_position = spawn_pos
+	box.spawn_position = spawn_pos
+	return box
 
 
 ## Spawns workshop tools (e.g. screwdrivers) into the workshop

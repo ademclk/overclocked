@@ -71,3 +71,6 @@ const DEFAULT_SURGE_CLEAR_TIME: float = 3.0      # Seconds to fix a surge
 # Tool Configuration (Phase 3C)
 const DEFAULT_SCREWDRIVER_COUNT: int = 2
 
+# Parts Stock Configuration (Phase 3D)
+const DEFAULT_INITIAL_STOCK_PER_PART: int = 3
+
