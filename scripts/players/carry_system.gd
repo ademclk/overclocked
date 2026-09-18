@@ -57,6 +57,16 @@ func pick_up(item: Carriable) -> void:
 	if not is_instance_valid(item):
 		return
 
+	# Claim check — prevent two players grabbing simultaneously
+	if not item.try_claim(player):
+		return
+
+	# Check if this grab was contested by another player
+	var was_contested: bool = item.is_contested_by_other_players(player)
+	if was_contested:
+		var flash_color: Color = player.get_player_color() if player else Color.WHITE
+		item.trigger_claim_flash(flash_color)
+
 	held_item = item
 	item.pick_up(player)
 
@@ -75,6 +85,8 @@ func pick_up(item: Carriable) -> void:
 	item_picked.emit(item)
 	var player_idx: int = player.player_index if player else 0
 	SignalBus.item_picked_up.emit(item.item_name, player_idx)
+	if SignalBus.has_signal("item_claimed"):
+		SignalBus.item_claimed.emit(item.item_name, player_idx, was_contested)
 
 
 func drop_item() -> void:

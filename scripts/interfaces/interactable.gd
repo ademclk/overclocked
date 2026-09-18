@@ -13,6 +13,7 @@ signal focus_lost(player: PlayerCharacter)
 
 var is_focused: bool = false
 var focused_by_player: PlayerCharacter = null
+var can_interact_handler: Callable = Callable()
 
 
 func _ready() -> void:
@@ -31,8 +32,12 @@ func interact(player: PlayerCharacter) -> void:
 
 
 ## Override to define whether interaction is currently available.
-func can_interact(_player: PlayerCharacter) -> bool:
-	return is_interactable
+func can_interact(player: PlayerCharacter) -> bool:
+	if not is_interactable:
+		return false
+	if can_interact_handler.is_valid():
+		return can_interact_handler.call(player)
+	return true
 
 
 ## Returns the display text for the HUD interaction prompt.

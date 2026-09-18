@@ -17,6 +17,7 @@ signal player_left(player_id: int)
 signal station_interacted(station_name: String, player_id: int)
 signal item_picked_up(item_name: String, player_id: int)
 signal item_dropped(item_name: String, player_id: int)
+signal item_claimed(item_name: String, player_id: int, contested: bool)
 
 # Orders & Repair Pipeline Signals
 signal order_spawned(order_id: String, device_type: String)

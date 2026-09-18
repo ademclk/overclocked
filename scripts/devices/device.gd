@@ -18,7 +18,6 @@ var installed_component: ComponentData = null
 
 @onready var device_label: Label3D = get_node_or_null("DeviceLabel") as Label3D
 @onready var device_mesh: MeshInstance3D = get_node_or_null("DeviceMesh") as MeshInstance3D
-@onready var interaction_zone: Interactable = get_node_or_null("InteractionZone") as Interactable
 
 
 func _ready() -> void:
@@ -180,10 +179,14 @@ func place_on(station: Node) -> void:
 
 func _setup_interaction_zone() -> void:
 	if not interaction_zone:
+		interaction_zone = get_node_or_null("InteractionZone") as Interactable
+	if not interaction_zone:
 		return
 
 	interaction_zone.interaction_prompt = "Pick Up %s" % item_name
 	interaction_zone.is_interactable = not is_held
+	interaction_zone.can_interact_handler = func(p: PlayerCharacter) -> bool:
+		return not is_held and can_claim(p) and (p == null or p.carry_system == null or p.carry_system.can_pick_up())
 
 	# Connect interaction to pick up if player interacts while on the ground
 	interaction_zone.interacted.connect(

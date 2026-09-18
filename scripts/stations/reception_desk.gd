@@ -18,14 +18,20 @@ func can_accept_device(_device: Carriable) -> bool:
 func can_player_interact(player: PlayerCharacter) -> bool:
 	return (
 		placed_device != null
+		and placed_device.can_claim(player)
 		and player != null
 		and player.carry_system != null
 		and player.carry_system.can_pick_up()
 	)
 
 
-func get_interaction_prompt(_player: PlayerCharacter) -> String:
+func get_interaction_prompt(player: PlayerCharacter) -> String:
 	if placed_device:
+		if player and not placed_device.can_claim(player):
+			var claiming_p: PlayerCharacter = placed_device.claimed_by
+			if claiming_p and is_instance_valid(claiming_p):
+				return "Claimed by P%d" % [claiming_p.player_index + 1]
+			return "In Use"
 		return "Pick Up Device"
 	return ""
 
@@ -33,6 +39,8 @@ func get_interaction_prompt(_player: PlayerCharacter) -> String:
 func _on_interacted(player: PlayerCharacter) -> void:
 	super._on_interacted(player)
 	if placed_device and player and player.carry_system and player.carry_system.can_pick_up():
+		if not placed_device.try_claim(player):
+			return
 		var device: Carriable = remove_device()
 		player.carry_system.pick_up(device)
 

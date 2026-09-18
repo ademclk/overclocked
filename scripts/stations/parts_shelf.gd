@@ -99,43 +99,47 @@ func _has_active_diagnosed_device() -> bool:
 
 ## Spawns a Carriable representation of the component with metadata
 func _create_part_instance(component: ComponentData) -> Carriable:
+	var part: Carriable = null
 	if part_scene:
 		var instance: Node = part_scene.instantiate()
 		if instance is Carriable:
+			part = instance as Carriable
 			if component:
-				instance.set_meta("component_data", component)
-				instance.item_name = component.component_name
-			return instance as Carriable
+				part.set_meta("component_data", component)
+				part.item_name = component.component_name
 
-	var part := Carriable.new()
-	part.name = component.component_id if component else "ComponentItem"
-	part.item_name = component.component_name if component else dispensed_part_name
-	part.item_type = dispensed_part_type
-	if component:
-		part.set_meta("component_data", component)
+	if not part:
+		part = Carriable.new()
+		part.name = component.component_id if component else "ComponentItem"
+		part.item_name = component.component_name if component else dispensed_part_name
+		part.item_type = dispensed_part_type
+		if component:
+			part.set_meta("component_data", component)
 
-	var mesh_inst := MeshInstance3D.new()
-	mesh_inst.name = "MeshInstance3D"
-	var box := BoxMesh.new()
-	box.size = Vector3(0.2, 0.1, 0.2)
-	mesh_inst.mesh = box
+		var mesh_inst := MeshInstance3D.new()
+		mesh_inst.name = "MeshInstance3D"
+		var box := BoxMesh.new()
+		box.size = Vector3(0.2, 0.1, 0.2)
+		mesh_inst.mesh = box
 
-	var mat := StandardMaterial3D.new()
-	if component:
-		match component.component_type:
-			"screen":
-				mat.albedo_color = Color(0.2, 0.7, 0.9)
-			"battery":
-				mat.albedo_color = Color(0.95, 0.8, 0.2)
-			"software":
-				mat.albedo_color = Color(0.65, 0.3, 0.85)
-			_:
-				mat.albedo_color = Color(0.3, 0.8, 0.4)
-	else:
-		mat.albedo_color = Color(0.1, 0.8, 0.9)
+		var mat := StandardMaterial3D.new()
+		if component:
+			match component.component_type:
+				"screen":
+					mat.albedo_color = Color(0.2, 0.7, 0.9)
+				"battery":
+					mat.albedo_color = Color(0.95, 0.8, 0.2)
+				"software":
+					mat.albedo_color = Color(0.65, 0.3, 0.85)
+				_:
+					mat.albedo_color = Color(0.3, 0.8, 0.4)
+		else:
+			mat.albedo_color = Color(0.1, 0.8, 0.9)
 
-	mesh_inst.material_override = mat
-	part.add_child(mesh_inst)
+		mesh_inst.material_override = mat
+		part.add_child(mesh_inst)
+
+	part.setup_interaction_zone()
 	return part
 
 

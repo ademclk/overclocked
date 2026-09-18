@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/test_shared_inventory.gd" id="1_shared_inv_test"]
+
+[node name="TestSharedInventory" type="Node"]
+script = ExtResource("1_shared_inv_test")
