@@ -13,6 +13,14 @@ const DEBUG_ROOM_SIZE: Vector2 = Vector2(10.0, 8.0)
 const MIN_PLAYERS: int = 1
 const MAX_PLAYERS: int = 4
 
+# Player Identity & Colors (P1: Blue, P2: Red, P3: Green, P4: Yellow)
+const PLAYER_COLORS: Array[Color] = [
+	Color(0.2, 0.6, 1.0),   # P1 — Blue
+	Color(1.0, 0.35, 0.25),  # P2 — Red
+	Color(0.3, 0.85, 0.35),  # P3 — Green
+	Color(1.0, 0.75, 0.1),   # P4 — Yellow
+]
+
 # Physics Collision Layers (1-based index and bitmasks)
 # Layer 1: World / Environment geometry (walls, static boundaries)
 const COLLISION_LAYER_WORLD: int = 1

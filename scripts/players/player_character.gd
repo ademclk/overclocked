@@ -32,6 +32,7 @@ var carry_system: CarrySystem = null
 @onready var interaction_area: Area3D = $InteractionArea
 @onready var carry_position: Marker3D = $CarryPosition
 @onready var player_label: Label3D = $PlayerLabel
+@onready var floor_ring: MeshInstance3D = get_node_or_null("FloorRing") as MeshInstance3D
 
 
 func _ready() -> void:
@@ -45,7 +46,7 @@ func _ready() -> void:
 	floor_constant_speed = true
 	floor_stop_on_slope = true
 
-	_update_player_label()
+	_apply_player_color()
 	_detect_child_systems()
 
 
@@ -80,9 +81,44 @@ func _update_movement_state(delta: float) -> void:
 			footstep.emit(player_index)
 
 
+## Returns the player's assigned color based on player_index
+func get_player_color() -> Color:
+	if player_index >= 0 and player_index < Constants.PLAYER_COLORS.size():
+		return Constants.PLAYER_COLORS[player_index]
+	return Constants.PLAYER_COLORS[player_index % Constants.PLAYER_COLORS.size()]
+
+
+## Applies the player's color to the capsule body mesh, floor ring, and overhead label
+func _apply_player_color() -> void:
+	var color: Color = get_player_color()
+
+	# Color the capsule mesh (using material_override to avoid mutating shared material)
+	if character_model:
+		var body_mesh: MeshInstance3D = character_model.get_node_or_null("BodyMesh") as MeshInstance3D
+		if body_mesh:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = color
+			mat.roughness = 0.5
+			body_mesh.material_override = mat
+
+	# Color the player label
+	_update_player_label()
+
+	# Color the floor indicator ring
+	var ring: MeshInstance3D = floor_ring if floor_ring != null else get_node_or_null("FloorRing") as MeshInstance3D
+	if ring:
+		var ring_mat := StandardMaterial3D.new()
+		ring_mat.albedo_color = color
+		ring_mat.emission_enabled = true
+		ring_mat.emission = color
+		ring_mat.emission_energy_multiplier = 0.6
+		ring.material_override = ring_mat
+
+
 func _update_player_label() -> void:
 	if player_label:
 		player_label.text = "P%d" % [player_index + 1]
+		player_label.modulate = get_player_color()
 
 
 func _detect_child_systems() -> void:
@@ -110,7 +146,7 @@ func is_walking() -> bool:
 	return current_movement_state == MovementState.WALKING
 
 
-## Sets player index and updates UI label
+## Sets player index and updates UI label and visual identity colors
 func set_player_index(index: int) -> void:
 	player_index = index
-	_update_player_label()
+	_apply_player_color()

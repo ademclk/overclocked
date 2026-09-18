@@ -26,6 +26,10 @@ roughness = 0.2
 material = SubResource("StandardMaterial3D_visor")
 size = Vector3(0.36, 0.12, 0.16)
 
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 0.38
+outer_radius = 0.46
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
 radius = 1.6
 
@@ -50,6 +54,10 @@ mesh = SubResource("CapsuleMesh_body")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0.24)
 mesh = SubResource("BoxMesh_visor")
 
+[node name="FloorRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("TorusMesh_ring")
+
 [node name="InteractionArea" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 collision_layer = 0
@@ -67,6 +75,7 @@ billboard = 1
 text = "P1"
 font_size = 32
 outline_size = 4
+outline_modulate = Color(0, 0, 0, 1)
 
 [node name="InteractionSystem" type="Node" parent="."]
 script = ExtResource("2_interact")
