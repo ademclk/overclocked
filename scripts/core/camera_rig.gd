@@ -73,6 +73,8 @@ func _ready() -> void:
 		if SignalBus:
 			if not SignalBus.player_joined.is_connected(_on_signal_player_joined):
 				SignalBus.player_joined.connect(_on_signal_player_joined)
+			if not SignalBus.player_spawned.is_connected(_on_signal_player_spawned):
+				SignalBus.player_spawned.connect(_on_signal_player_spawned)
 			if not SignalBus.player_left.is_connected(_on_signal_player_left):
 				SignalBus.player_left.connect(_on_signal_player_left)
 
@@ -295,6 +297,14 @@ func _clean_tracked_players() -> void:
 func _on_signal_player_joined(_player_id: int) -> void:
 	if tracking_enabled:
 		_sync_players_from_group()
+
+
+func _on_signal_player_spawned(_player_id: int, player: Node) -> void:
+	if player is Node3D and not _tracked_players.has(player):
+		add_tracked_player(player as Node3D)
+	elif tracking_enabled:
+		_sync_players_from_group()
+
 
 
 func _on_signal_player_left(_player_id: int) -> void:

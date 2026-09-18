@@ -39,7 +39,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var is_triggered: bool = (
 		event.is_action_pressed(interact_action)
 		or event.is_action_pressed(pick_up_action)
-		or (event is InputEventAction and (event.action == &"interact" or event.action == &"pick_up"))
+		or (player_idx == 0 and event is InputEventAction and (event.action == &"interact" or event.action == &"pick_up"))
 	)
 
 	if is_triggered and _current_focus:

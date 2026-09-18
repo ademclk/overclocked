@@ -16,6 +16,7 @@ const DEFAULT_DEVICE_SCENE: PackedScene = preload("res://scenes/devices/Device.t
 @export var default_device_data: DeviceData = DEFAULT_PHONE_DATA
 
 var active_players: Array[PlayerCharacter] = []
+var _debug_focused_player: int = 0
 
 @onready var floor_node: CSGBox3D = $Floor
 @onready var directional_light: DirectionalLight3D = $DirectionalLight3D
@@ -107,6 +108,7 @@ func spawn_player(player_index: int = 0) -> PlayerCharacter:
 	player.global_position = get_spawn_position(player_index)
 	active_players.append(player)
 	SignalBus.player_joined.emit(player_index)
+	SignalBus.player_spawned.emit(player_index, player)
 	return player
 
 
@@ -307,6 +309,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F10:
 				_debug_spawn_additional_player()
 				get_viewport().set_input_as_handled()
+			KEY_F11:
+				_cycle_debug_focus()
+				get_viewport().set_input_as_handled()
+
+
+func _cycle_debug_focus() -> void:
+	_clean_active_players()
+	if active_players.is_empty():
+		print("[Debug F11] No active players to focus.")
+		return
+	_debug_focused_player = (_debug_focused_player + 1) % active_players.size()
+	var p: PlayerCharacter = active_players[_debug_focused_player]
+	print("[Debug F11] Debug focus → P%d (index %d)" % [p.player_index + 1, p.player_index])
 
 
 func _debug_spawn_additional_player() -> PlayerCharacter:
@@ -326,13 +341,23 @@ func _debug_spawn_additional_player() -> PlayerCharacter:
 
 
 func _debug_advance_device(target_state: RepairState.State) -> void:
-	var player: PlayerCharacter = get_player(0)
 	var dev: Device = null
 
-	if player and player.carry_system and player.carry_system.is_carrying():
-		var held := player.carry_system.get_held_item()
+	# Try focused player first
+	var focused_player: PlayerCharacter = get_player(_debug_focused_player)
+	if focused_player and focused_player.carry_system and focused_player.carry_system.is_carrying():
+		var held := focused_player.carry_system.get_held_item()
 		if held is Device:
 			dev = held as Device
+
+	# Try ALL active players if not found on focused player
+	if not dev:
+		for player in active_players:
+			if player and player.carry_system and player.carry_system.is_carrying():
+				var held := player.carry_system.get_held_item()
+				if held is Device:
+					dev = held as Device
+					break
 
 	if not dev and diagnostic_bench and diagnostic_bench.placed_device is Device:
 		dev = diagnostic_bench.placed_device as Device
@@ -358,7 +383,9 @@ func _debug_advance_device(target_state: RepairState.State) -> void:
 
 
 func _debug_give_part() -> void:
-	var player: PlayerCharacter = get_player(0)
+	var player: PlayerCharacter = get_player(_debug_focused_player)
+	if not player and not active_players.is_empty():
+		player = active_players[0]
 	if not player or not player.carry_system:
 		print("[Debug F7] No player found.")
 		return
@@ -386,7 +413,7 @@ func _debug_give_part() -> void:
 		add_child(part)
 
 	player.carry_system.pick_up(part)
-	print("[Debug F7] Gave player replacement component: %s" % comp.component_name)
+	print("[Debug F7] Gave P%d replacement component: %s" % [player.player_index + 1, comp.component_name])
 
 
 func _debug_complete_order() -> void:
@@ -406,20 +433,19 @@ func _debug_complete_order() -> void:
 func _debug_dump_state() -> void:
 	print("\n================= WORKSHOP STATE DUMP =================")
 	_clean_active_players()
-	print("Active Players: %d" % active_players.size())
-	for p in active_players:
-		var held_desc: String = "None"
-		if p.carry_system and p.carry_system.is_carrying():
-			var held: Carriable = p.carry_system.get_held_item()
-			if held:
-				held_desc = held.item_name
-				if held is Device:
-					held_desc += " [%s]" % (held as Device).get_repair_state()
-		print("  Player %d (P%d) at %s | Carried: %s" % [
-			p.player_index,
-			p.player_index + 1,
-			p.global_position,
-			held_desc
+	print("Active Players: %d (Focused: P%d)" % [active_players.size(), _debug_focused_player + 1])
+	for player in active_players:
+		if not is_instance_valid(player):
+			continue
+		var carried: String = "Empty"
+		if player.carry_system and player.carry_system.is_carrying():
+			var item: Carriable = player.carry_system.get_held_item()
+			if item:
+				carried = item.item_name
+				if item is Device:
+					carried += " [%s]" % (item as Device).get_repair_state()
+		print("  P%d — Carried: %s | Pos: %v | Stunned: %s" % [
+			player.player_index + 1, carried, player.global_position, player.is_stunned()
 		])
 
 	if order_manager:
@@ -441,5 +467,9 @@ func _debug_dump_state() -> void:
 		var placed := st.placed_device.item_name if st.placed_device else "Empty"
 		if st.placed_device is Device:
 			placed += " [%s]" % (st.placed_device as Device).get_repair_state()
-		print("  - %-18s: State=%-10s | Placed: %s" % [st.station_name, BaseStation.StationState.keys()[st.current_state], placed])
+		var user_desc := "P%d" % (st.get_active_user().player_index + 1) if st.is_occupied() else "None"
+		print("  - %-18s: State=%-10s | Placed: %-15s | Occupied By: %s" % [
+			st.station_name, BaseStation.StationState.keys()[st.current_state], placed, user_desc
+		])
 	print("=======================================================\n")
+

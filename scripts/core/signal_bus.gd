@@ -12,15 +12,20 @@ signal game_paused(is_paused: bool)
 # Player Signals
 signal player_joined(player_id: int)
 signal player_left(player_id: int)
+signal player_spawned(player_index: int, player: Node)
 signal player_device_assigned(player_index: int, device_id: int)
+signal player_bumped(bumper_index: int, bumped_index: int)
 
 # Workshop & Interaction Signals
 signal station_interacted(station_name: String, player_id: int)
 signal station_occupied(station_name: String, player_id: int)
 signal station_released(station_name: String)
+signal station_freed(station_name: String)
 signal item_picked_up(item_name: String, player_id: int)
 signal item_dropped(item_name: String, player_id: int)
 signal item_claimed(item_name: String, player_id: int, contested: bool)
+signal item_claim_contested(item_name: String, claiming_player: int, contesting_player: int)
+
 
 # Orders & Repair Pipeline Signals
 signal order_spawned(order_id: String, device_type: String)

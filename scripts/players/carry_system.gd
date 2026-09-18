@@ -29,7 +29,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var drop_action := MultiplayerInput.action_name(player_idx, MultiplayerInput.BASE_DROP)
 	var is_drop: bool = (
 		event.is_action_pressed(drop_action)
-		or (event is InputEventAction and event.action == &"drop")
+		or (player_idx == 0 and event is InputEventAction and event.action == &"drop")
 	)
 
 	if is_drop and is_carrying():

@@ -20,6 +20,17 @@ const PLAYER_COLORS: Array[Color] = [
 	Color(0.3, 0.85, 0.35),  # P3 — Green
 	Color(1.0, 0.75, 0.1),   # P4 — Yellow
 ]
+const PLAYER_COLOR_NAMES: Array[String] = ["Blue", "Red", "Green", "Yellow"]
+
+# Keyboard split action mapping for P1 (P0 uses WASD by default)
+const KB_PLAYER1_INTERACT_KEY: int = KEY_KP_1
+const KB_PLAYER1_PICKUP_KEY: int = KEY_KP_2
+const KB_PLAYER1_DROP_KEY: int = KEY_KP_3
+
+# Bump Mechanic Configuration (Phase 2I)
+const BUMP_SPEED_THRESHOLD: float = 4.0   # Combined speed threshold for bumping
+const BUMP_STUN_DURATION: float = 0.3     # Seconds of stumble
+const BUMP_COOLDOWN: float = 1.0          # Seconds between bumps
 
 # Physics Collision Layers (1-based index and bitmasks)
 # Layer 1: World / Environment geometry (walls, static boundaries)
@@ -49,3 +60,4 @@ const DEFAULT_ANALOG_DEADZONE: float = 0.2
 const DEFAULT_INTERACTION_DISTANCE: float = 1.6
 const DEFAULT_PLAYER_MOVE_SPEED: float = 6.0
 const DEFAULT_ORDER_TIMEOUT_SECONDS: float = 60.0
+

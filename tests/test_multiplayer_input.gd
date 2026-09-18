@@ -263,11 +263,14 @@ func test_player_controller_input_routing() -> int:
 	var player_scene: PackedScene = load("res://scenes/characters/PlayerCharacter.tscn")
 	var p0: PlayerCharacter = player_scene.instantiate() as PlayerCharacter
 	p0.player_index = 0
+	p0.position = Vector3(0, 0, 0)
 	add_child(p0)
 
 	var p1: PlayerCharacter = player_scene.instantiate() as PlayerCharacter
 	p1.player_index = 1
+	p1.position = Vector3(10, 0, 0)
 	add_child(p1)
+
 
 	# Simulate W press
 	var key_w := InputEventKey.new()

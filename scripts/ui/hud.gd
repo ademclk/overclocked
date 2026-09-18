@@ -262,6 +262,7 @@ func _connect_signal_bus() -> void:
 		return
 
 	SignalBus.player_joined.connect(_on_bus_player_joined)
+	SignalBus.player_spawned.connect(_on_bus_player_spawned)
 	SignalBus.player_left.connect(_on_bus_player_left)
 	SignalBus.order_spawned.connect(_on_bus_order_spawned)
 	SignalBus.order_completed.connect(_on_bus_order_completed)
@@ -699,6 +700,14 @@ func _on_order_expired(order: Order) -> void:
 
 func _on_bus_player_joined(_player_id: int) -> void:
 	_auto_discover_dependencies()
+
+
+func _on_bus_player_spawned(_player_id: int, player: Node) -> void:
+	if player is PlayerCharacter and is_instance_valid(player):
+		add_tracked_player(player as PlayerCharacter)
+	else:
+		_auto_discover_dependencies()
+
 
 
 func _on_bus_player_left(player_id: int) -> void:

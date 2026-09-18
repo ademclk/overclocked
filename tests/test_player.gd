@@ -27,6 +27,7 @@ func _ready() -> void:
 		Constants.COLLISION_MASK_WORLD
 		| Constants.COLLISION_MASK_STATIONS
 		| Constants.COLLISION_MASK_ITEMS
+		| Constants.COLLISION_MASK_PLAYERS
 	)
 	assert(player.collision_mask == expected_mask, "player.collision_mask mismatch")
 	assert(player.floor_constant_speed == true, "floor_constant_speed should be true")

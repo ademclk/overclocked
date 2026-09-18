@@ -181,6 +181,7 @@ func clear_active_user(player: PlayerCharacter = null) -> void:
 			_active_user = null
 			user_changed.emit(old_user, null)
 			SignalBus.station_released.emit(station_name)
+			SignalBus.station_freed.emit(station_name)
 			_update_visual_state()
 
 
