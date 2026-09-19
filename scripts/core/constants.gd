@@ -74,3 +74,21 @@ const DEFAULT_SCREWDRIVER_COUNT: int = 2
 # Parts Stock Configuration (Phase 3D)
 const DEFAULT_INITIAL_STOCK_PER_PART: int = 3
 
+# Device Tier Configuration (Phase 4)
+const TIER_1_REPAIR_TIME_BASE: float = 60.0    ## Phone baseline
+const TIER_2_REPAIR_TIME_BASE: float = 100.0   ## Console/Router baseline
+const TIER_3_REPAIR_TIME_BASE: float = 180.0   ## Desktop baseline
+
+# Two-Player Carry Configuration (Phase 4)
+const TWO_PLAYER_CARRY_REQUEST_TIMEOUT: float = 3.0   ## Seconds before request cancels
+const TWO_PLAYER_CARRY_SPEED_MULTIPLIER: float = 0.6  ## Tethered movement speed
+const ONE_PLAYER_HEAVY_CARRY_SPEED: float = 0.4       ## Lone player carrying heavy device
+const TWO_PLAYER_CARRY_DISTANCE: float = 1.5          ## Max distance between both players
+
+# Device Color Palette (Phase 4 — matches device_color in DeviceData .tres files)
+const DEVICE_COLOR_PHONE: Color = Color(0.85, 0.85, 0.88)
+const DEVICE_COLOR_TABLET: Color = Color(0.3, 0.55, 0.75)
+const DEVICE_COLOR_LAPTOP: Color = Color(0.15, 0.15, 0.18)
+const DEVICE_COLOR_DESKTOP: Color = Color(0.1, 0.1, 0.12)
+const DEVICE_COLOR_CONSOLE: Color = Color(0.08, 0.08, 0.08)
+const DEVICE_COLOR_ROUTER: Color = Color(0.9, 0.9, 0.87)

@@ -7,6 +7,9 @@ extends Resource
 @export var component_id: String = ""
 @export var component_type: String = "" # "screen", "battery", "software", etc.
 
+## 💡 Phase 4: shelf category for multi-shelf layout prep (used in Phase 5)
+@export var component_shelf_category: String = ""  ## e.g. "phone", "laptop", "shared"
+
 
 ## Returns whether this component data is properly configured
 func is_valid() -> bool:
