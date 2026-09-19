@@ -76,6 +76,37 @@ func _on_interacted(player: PlayerCharacter) -> void:
 func _on_processing_done() -> void:
 	if placed_device and placed_device.has_method("diagnose"):
 		placed_device.diagnose()
+	if placed_device is Device:
+		_display_diagnosis(placed_device as Device)
+
+
+## Updates station label and progress label to reveal diagnosis, including all tags for multi-fault
+func _display_diagnosis(device: Device) -> void:
+	if not device or not device.assigned_fault:
+		return
+	var fault: FaultData = device.assigned_fault
+	var fault_text := ""
+	if fault.is_multi_fault:
+		var tag_list: String = ", ".join(fault.fault_display_tags) if not fault.fault_display_tags.is_empty() else fault.fault_name
+		fault_text = "Fault: %s\nNeeds: %s" % [fault.fault_name, tag_list]
+	else:
+		fault_text = "Fault: %s" % fault.fault_name
+
+	if progress_label:
+		progress_label.visible = true
+		progress_label.text = fault_text
+		progress_label.modulate = Color(0.2, 0.9, 0.4)
+	if station_label:
+		station_label.text = "%s\n%s" % [station_name.to_upper(), fault_text]
+
+
+func remove_device() -> Carriable:
+	var dev := super.remove_device()
+	if station_label:
+		station_label.text = station_name.to_upper()
+	if progress_label:
+		progress_label.visible = false
+	return dev
 
 
 func can_accept_device(device: Carriable) -> bool:

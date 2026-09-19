@@ -418,7 +418,11 @@ func _update_carried_item() -> void:
 				primary_device = dev
 				display_text += " [%s]" % dev.get_repair_state()
 				if dev.is_diagnosed and dev.assigned_fault:
-					display_text += " (%s)" % dev.assigned_fault.fault_name
+					if dev.assigned_fault.is_multi_fault:
+						var tag_list: String = ", ".join(dev.assigned_fault.fault_display_tags) if not dev.assigned_fault.fault_display_tags.is_empty() else dev.assigned_fault.fault_name
+						display_text += " (%s - Needs: %s)" % [dev.assigned_fault.fault_name, tag_list]
+					else:
+						display_text += " (%s)" % dev.assigned_fault.fault_name
 			if carried_item_name:
 				carried_item_name.text = display_text
 			if carried_item_panel:
@@ -472,7 +476,11 @@ func _update_all_carried_items() -> void:
 					var dev := item as Device
 					text += " [%s]" % dev.get_repair_state()
 					if dev.is_diagnosed and dev.assigned_fault:
-						text += " (%s)" % dev.assigned_fault.fault_name
+						if dev.assigned_fault.is_multi_fault:
+							var tag_list: String = ", ".join(dev.assigned_fault.fault_display_tags) if not dev.assigned_fault.fault_display_tags.is_empty() else dev.assigned_fault.fault_name
+							text += " (%s - Needs: %s)" % [dev.assigned_fault.fault_name, tag_list]
+						else:
+							text += " (%s)" % dev.assigned_fault.fault_name
 				item_label.text = text
 			else:
 				item_label.text = "—"
@@ -541,7 +549,11 @@ func _update_order_row(entry: HBoxContainer, order: Order) -> void:
 		var dev_name: String = order.get_device_name()
 		if order.device_instance and is_instance_valid(order.device_instance):
 			if order.device_instance.is_diagnosed and order.assigned_fault:
-				dev_name += " (%s)" % order.assigned_fault.fault_name
+				if order.assigned_fault.is_multi_fault:
+					var tag_list: String = ", ".join(order.assigned_fault.fault_display_tags) if not order.assigned_fault.fault_display_tags.is_empty() else order.assigned_fault.fault_name
+					dev_name += " (%s - Needs: %s)" % [order.assigned_fault.fault_name, tag_list]
+				else:
+					dev_name += " (%s)" % order.assigned_fault.fault_name
 			dev_name += " [%s]" % order.device_instance.get_repair_state()
 		if order.is_priority:
 			dev_name = "⚡ " + dev_name
@@ -763,6 +775,7 @@ func _on_bus_device_state_changed(_device_name: String, _old_state: String, _new
 
 func _on_bus_diagnosis_revealed(_device_name: String, _fault_name: String) -> void:
 	_update_carried_item()
+	_update_active_orders()
 
 
 func _on_bus_prompt_changed(text: String) -> void:

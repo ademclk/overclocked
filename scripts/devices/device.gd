@@ -160,9 +160,13 @@ func diagnose() -> void:
 		if advance_state(RepairState.State.DIAGNOSED):
 			is_diagnosed = true
 			diagnosed.emit(assigned_fault)
+			if assigned_fault:
+				SignalBus.diagnosis_revealed.emit(item_name, assigned_fault.fault_name)
 	else:
 		is_diagnosed = true
 		diagnosed.emit(assigned_fault)
+		if assigned_fault:
+			SignalBus.diagnosis_revealed.emit(item_name, assigned_fault.fault_name)
 	_update_label()
 
 
@@ -216,13 +220,18 @@ func try_install_component(component: ComponentData) -> bool:
 
 ## Installs replacement part and advances state to PART_REPLACED
 func install_part() -> bool:
-	if current_repair_state == RepairState.State.DISASSEMBLED:
-		if assigned_fault and assigned_fault.is_multi_fault:
+	if current_repair_state != RepairState.State.DISASSEMBLED:
+		return false
+	if assigned_fault:
+		if assigned_fault.is_multi_fault:
 			var missing: Array[ComponentData] = get_missing_components()
 			if not missing.is_empty():
 				return false
-		return advance_state(RepairState.State.PART_REPLACED)
-	return false
+		elif not installed_components.is_empty():
+			var missing: Array[ComponentData] = get_missing_components()
+			if not missing.is_empty():
+				return false
+	return advance_state(RepairState.State.PART_REPLACED)
 
 
 ## Flashes software and transitions through testing

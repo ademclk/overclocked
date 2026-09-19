@@ -239,6 +239,16 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 						return "Install %s" % part_name
 					return "Wrong Replacement Part"
 				return "Wrong Item"
+			if placed_device is Device:
+				var dev := placed_device as Device
+				if dev.assigned_fault and dev.assigned_fault.is_multi_fault:
+					var missing: Array[ComponentData] = dev.get_missing_components()
+					if not missing.is_empty():
+						var names: PackedStringArray = []
+						for m in missing:
+							if m:
+								names.append(m.component_name)
+						return "Needs: %s" % ", ".join(names)
 			return "Need Replacement Part"
 
 		"PART_REPLACED":
@@ -392,12 +402,17 @@ func _try_install_part(player: PlayerCharacter) -> bool:
 
 	if placed_device is Device:
 		var dev := placed_device as Device
-		var comp: ComponentData = part.get_meta("component_data", null) as ComponentData
+		var comp: ComponentData = part.get_meta("component_data") as ComponentData if part.has_meta("component_data") else null
 		if comp:
 			dev.try_install_component(comp)
 		carry.place_on_station(self)
 		part.queue_free()
-		dev.advance_state(RepairState.State.PART_REPLACED)
+		var advanced: bool = dev.install_part()
+		_update_device_status_label()
+		if not advanced:
+			current_state = StationState.OCCUPIED
+			_update_visual_state()
+			return true
 	elif placed_device.has_method("install_part"):
 		carry.place_on_station(self)
 		part.queue_free()
@@ -504,13 +519,51 @@ func _update_visual_state() -> void:
 				progress_label.modulate = Color(0.95, 0.35, 0.2)
 		elif r_state == "DISASSEMBLED" and current_state == StationState.OCCUPIED:
 			progress_label.visible = true
-			progress_label.text = "NEED PART"
+			if placed_device is Device and (placed_device as Device).assigned_fault and (placed_device as Device).assigned_fault.is_multi_fault:
+				var missing_count: int = (placed_device as Device).get_missing_components().size()
+				if missing_count > 0:
+					progress_label.text = "NEED PART (%d LEFT)" % missing_count
+				else:
+					progress_label.text = "PARTS INSTALLED"
+			else:
+				progress_label.text = "NEED PART"
 			progress_label.modulate = Color(0.95, 0.65, 0.15)
 		elif r_state == "PART_REPLACED" and current_state == StationState.OCCUPIED:
 			if not _has_required_tool(null):
 				progress_label.visible = true
 				progress_label.text = "NEED %s" % required_tool_name.to_upper()
 				progress_label.modulate = Color(0.95, 0.35, 0.2)
+
+	_update_device_status_label()
+
+
+## Updates the station label to show component slots for multi-fault devices
+func _update_device_status_label() -> void:
+	if not placed_device or not placed_device is Device:
+		if station_label:
+			station_label.text = station_name.to_upper()
+		return
+	var device := placed_device as Device
+	if not device.assigned_fault or not device.assigned_fault.is_multi_fault:
+		return
+
+	var required: Array[ComponentData] = device.assigned_fault.get_required_components()
+	var missing: Array[ComponentData] = device.get_missing_components()
+	var status_lines: PackedStringArray = []
+	for comp: ComponentData in required:
+		if comp:
+			var is_installed: bool = not missing.any(func(m: ComponentData) -> bool: return m != null and m.component_id == comp.component_id)
+			status_lines.append("%s %s" % ["✓" if is_installed else "○", comp.component_name])
+
+	if station_label:
+		station_label.text = "%s\n%s" % [station_name.to_upper(), "\n".join(status_lines)]
+
+
+func remove_device() -> Carriable:
+	var dev := super.remove_device()
+	if station_label:
+		station_label.text = station_name.to_upper()
+	return dev
 
 
 func _can_accept_workbench_item(item: Carriable) -> bool:
@@ -537,12 +590,15 @@ func _is_valid_replacement_part(device: Carriable, part: Carriable) -> bool:
 
 	if device is Device:
 		var dev := device as Device
-		var comp: ComponentData = part.get_meta("component_data", null) as ComponentData
+		var comp: ComponentData = part.get_meta("component_data") as ComponentData if part.has_meta("component_data") else null
 		if comp:
-			if dev.assigned_fault and dev.assigned_fault.broken_component:
-				return comp.component_id == dev.assigned_fault.broken_component.component_id
+			if dev.assigned_fault:
+				var missing := dev.get_missing_components()
+				return missing.any(func(c: ComponentData) -> bool: return c != null and c.component_id == comp.component_id)
 			return true
 		# Fallback if part has no component metadata
-		return dev.assigned_fault == null or dev.assigned_fault.broken_component == null
+		if dev.assigned_fault:
+			return not dev.get_missing_components().is_empty()
+		return true
 
 	return true
