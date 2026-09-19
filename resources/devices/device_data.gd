@@ -12,7 +12,7 @@ extends Resource
 @export var difficulty_tier: int = 1       ## 1=Phone/Tablet, 2=Laptop, 3=Desktop, 4=Console/Router
 @export var requires_software: bool = false
 
-## Phase 4 additions:
+## Visual and carry properties:
 @export var device_color: Color = Color(0.5, 0.5, 0.5)     ## In-world mesh tint for visual identity
 @export var device_scene: PackedScene = null                  ## Custom scene override — null = use Device.tscn
 @export var carry_requires_two_players: bool = false          ## Desktop PC / server rack needs 2 players to carry

@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2D: Camera System — Auto-Framing All Players.
+## Test suite for Camera System — Auto-Framing All Players.
 ## Tests multi-player auto-centering, adaptive zoom spread, min/max bounds clamping,
 ## smooth lerp interpolation, room bounds clamping, single-player fallback, and camera shake.
 
@@ -46,7 +46,7 @@ func _assert(condition: bool, message: String) -> int:
 		return 1
 
 
-## 1. Verify default properties and Phase 1 backward compatibility
+## 1. Verify default properties and backward compatibility
 func test_default_camera_rig_properties() -> int:
 	print("\n[1] Testing default CameraRig properties & Phase 1 compatibility...")
 	var err: int = 0
@@ -62,7 +62,7 @@ func test_default_camera_rig_properties() -> int:
 	err += _assert(is_equal_approx(rig.max_camera_height, 18.0), "max_camera_height is 18.0")
 	err += _assert(is_equal_approx(rig.player_padding, 3.0), "player_padding is 3.0")
 
-	# Test frame_bounds still sets target_offset as in Phase 1
+	# Test frame_bounds still sets target_offset
 	rig.frame_bounds(Vector3(-5, 0, -4), Vector3(5, 0, 4))
 	err += _assert(rig.target_offset == Vector3.ZERO, "frame_bounds symmetric room gives zero offset")
 

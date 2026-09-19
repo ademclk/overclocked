@@ -26,7 +26,7 @@ var current_movement_state: MovementState = MovementState.IDLE
 var _input_direction: Vector3 = Vector3.ZERO
 var _distance_since_last_footstep: float = 0.0
 
-# Bump mechanic & stun state (Phase 2I)
+# Bump mechanic & stun state
 var _is_stunned: bool = false
 var _stun_timer: float = 0.0
 var _bump_cooldown_timer: float = 0.0

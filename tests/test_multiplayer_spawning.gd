@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2B: Multi-Player Spawning.
+## Test suite for Multi-Player Spawning.
 ## Tests multi-player spawning, player indices, designated spawn positions,
 ## active_players tracking, SignalBus signals, graceful fallbacks, and runtime spawning.
 

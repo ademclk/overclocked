@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2C: Player Identity & Visual Differentiation.
+## Test suite for Player Identity & Visual Differentiation.
 ## Tests player colors definition, mesh material overrides, PlayerLabel text and modulation,
 ## floor ring indicators, instance material isolation, and round persistence.
 

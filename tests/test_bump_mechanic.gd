@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2I: Bump Mechanic
+## Test suite for Bump Mechanic
 ## Tests:
 ## 1. CharacterBody3D collision configuration (layer & mask include PLAYERS)
 ## 2. Low-speed collision does NOT trigger bump or stun

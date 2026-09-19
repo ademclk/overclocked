@@ -43,17 +43,17 @@ signal carried_item_changed(item_name: String)
 signal round_started
 signal round_ended(total_score: int, total_stars: int)
 
-# Hazard Signals (Phase 3)
+# Hazard Signals
 signal hazard_activated(hazard_name: String, hazard_type: String)
 signal hazard_cleared(hazard_name: String)
 signal hazard_expired(hazard_name: String)
 
-# Parts Stock Signals (Phase 3D)
+# Parts Stock Signals
 signal part_dispensed(component_id: String, remaining_stock: int)
 signal part_out_of_stock(component_id: String)
 signal part_restocked(component_id: String, new_stock: int)
 
-# Multi-Fault & Device Signals (Phase 4)
+# Multi-Fault & Device Signals
 signal multi_fault_component_installed(device_name: String, component_name: String, remaining: int)
 signal multi_fault_complete(device_name: String)
 signal device_carry_requested(device_name: String, requesting_player: int)

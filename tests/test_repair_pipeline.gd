@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 1E: Repair Pipeline
+## Test suite for Repair Pipeline
 ## Tests end-to-end device state progression across all stations,
 ## workbench multi-step logic, wrong-station prevention,
 ## fault-based part dispensing, and processing feedback.

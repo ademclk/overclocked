@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2A: Multiplayer Input Manager & Input Isolation.
+## Test suite for Multiplayer Input Manager & Input Isolation.
 
 func _ready() -> void:
 	print("=========================================================")

@@ -18,14 +18,14 @@ const COLOR_TIMER_CRITICAL: Color = Color(0.95, 0.25, 0.20, 1.0)  # < 20%
 const COLOR_STAR_EARNED: Color = Color(1.0, 0.85, 0.2, 1.0)
 const COLOR_STAR_EMPTY: Color = Color(0.35, 0.38, 0.45, 1.0)
 
-# Nodes matching Phase 1G & 2G Scene Tree specification
+# Nodes matching Scene Tree specification
 @onready var order_panel: VBoxContainer = $OrderPanel
 @onready var order_entry_template: HBoxContainer = $OrderPanel/OrderEntry
 
 # Multiplayer carried items panel
 @onready var carried_items_panel: HBoxContainer = get_node_or_null("CarriedItemsPanel") as HBoxContainer
 
-# Backward compatibility references for Phase 1
+# Backward compatibility references
 @onready var carried_item_panel: HBoxContainer = get_node_or_null("CarriedItemPanel") as HBoxContainer
 @onready var carried_item_icon: TextureRect = (
 	get_node_or_null("CarriedItemPanel/ItemIcon") as TextureRect

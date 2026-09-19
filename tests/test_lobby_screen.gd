@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2H: Lobby Screen (Player Join / Leave)
+## Test suite for Lobby Screen (Player Join / Leave)
 ## Tests lobby scene structure, device detection (keyboard split & gamepads),
 ## join/leave flows, visual color coding, ready-up synchronization, minimum player validation,
 ## device assignment propagation, and controller disconnect handling.

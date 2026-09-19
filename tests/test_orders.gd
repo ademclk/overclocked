@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 1F: Order System
+## Test suite for Order System
 ## Tests Order lifecycle, timer ticking, star thresholds, scoring,
 ## OrderData resources, OrderManager spawning, and delivery integration.
 

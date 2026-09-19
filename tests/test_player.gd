@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for PlayerCharacter (Phase 1A verification).
+## Test suite for PlayerCharacter.
 
 
 func _ready() -> void:

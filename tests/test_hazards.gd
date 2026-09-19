@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 3B: Workshop Hazards
+## Test suite for Workshop Hazards
 ## Tests BaseHazard lifecycle, FloorSpillHazard slowing and clearing,
 ## PowerSurgeHazard station disruption, OverheatingHazard workbench tracking,
 ## and HazardManager pool limits and difficulty ramping.

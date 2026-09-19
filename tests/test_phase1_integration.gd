@@ -1,6 +1,6 @@
 extends Node
 
-## End-to-End Integration Test Suite for Phase 1H.
+## End-to-End Integration Test Suite for Core Gameplay.
 ## Tests full integration of Workshop scene, stations, entities, player, HUD,
 ## OrderManager pipeline, end-to-end device repair loop, round lifecycle,
 ## debug overlay, and debug hotkeys (F3, F4, F6, F7, F8, F9).
@@ -42,7 +42,7 @@ func _assert(condition: bool, message: String) -> int:
 		return 1
 
 
-## 1. Test Workshop scene tree matches Phase 1 specification
+## 1. Test Workshop scene tree matches specification
 func test_workshop_scene_tree_structure() -> int:
 	print("\n[1] Testing Workshop scene tree hierarchy and structure...")
 	var err: int = 0

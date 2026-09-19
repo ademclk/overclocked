@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2E: Shared Inventory & Item Contention
+## Test suite for Shared Inventory & Item Contention
 ## Tests:
 ## 1. Item claim system exclusivity (only one player can claim an item)
 ## 2. Carriable claimed_by field and try_claim / can_claim / release_claim

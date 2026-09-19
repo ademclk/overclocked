@@ -27,7 +27,7 @@ const KB_PLAYER1_INTERACT_KEY: int = KEY_KP_1
 const KB_PLAYER1_PICKUP_KEY: int = KEY_KP_2
 const KB_PLAYER1_DROP_KEY: int = KEY_KP_3
 
-# Bump Mechanic Configuration (Phase 2I)
+# Bump Mechanic Configuration
 const BUMP_SPEED_THRESHOLD: float = 4.0   # Combined speed threshold for bumping
 const BUMP_STUN_DURATION: float = 0.3     # Seconds of stumble
 const BUMP_COOLDOWN: float = 1.0          # Seconds between bumps
@@ -61,31 +61,31 @@ const DEFAULT_INTERACTION_DISTANCE: float = 1.6
 const DEFAULT_PLAYER_MOVE_SPEED: float = 6.0
 const DEFAULT_ORDER_TIMEOUT_SECONDS: float = 60.0
 
-# Hazard Configuration (Phase 3)
+# Hazard Configuration
 const DEFAULT_OVERHEAT_TIME: float = 20.0       # Seconds before device overheats
 const DEFAULT_SURGE_DURATION: float = 15.0       # Power surge duration
 const DEFAULT_SPILL_SLOW_FACTOR: float = 0.45    # Player speed multiplier in spill
 const DEFAULT_SPILL_CLEAR_TIME: float = 2.0      # Seconds to mop up a spill
 const DEFAULT_SURGE_CLEAR_TIME: float = 3.0      # Seconds to fix a surge
 
-# Tool Configuration (Phase 3C)
+# Tool Configuration
 const DEFAULT_SCREWDRIVER_COUNT: int = 2
 
-# Parts Stock Configuration (Phase 3D)
+# Parts Stock Configuration
 const DEFAULT_INITIAL_STOCK_PER_PART: int = 3
 
-# Device Tier Configuration (Phase 4)
+# Device Tier Configuration
 const TIER_1_REPAIR_TIME_BASE: float = 60.0    ## Phone baseline
 const TIER_2_REPAIR_TIME_BASE: float = 100.0   ## Console/Router baseline
 const TIER_3_REPAIR_TIME_BASE: float = 180.0   ## Desktop baseline
 
-# Two-Player Carry Configuration (Phase 4)
+# Two-Player Carry Configuration
 const TWO_PLAYER_CARRY_REQUEST_TIMEOUT: float = 3.0   ## Seconds before request cancels
 const TWO_PLAYER_CARRY_SPEED_MULTIPLIER: float = 0.6  ## Tethered movement speed
 const ONE_PLAYER_HEAVY_CARRY_SPEED: float = 0.4       ## Lone player carrying heavy device
 const TWO_PLAYER_CARRY_DISTANCE: float = 1.5          ## Max distance between both players
 
-# Device Color Palette (Phase 4 — matches device_color in DeviceData .tres files)
+# Device Color Palette (matches device_color in DeviceData .tres files)
 const DEVICE_COLOR_PHONE: Color = Color(0.85, 0.85, 0.88)
 const DEVICE_COLOR_TABLET: Color = Color(0.3, 0.55, 0.75)
 const DEVICE_COLOR_LAPTOP: Color = Color(0.15, 0.15, 0.18)

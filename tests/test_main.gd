@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Main.tscn and main.gd (Phase 0.6 verification).
+## Test suite for Main.tscn and main.gd.
 
 
 func _ready() -> void:

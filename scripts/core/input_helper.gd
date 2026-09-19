@@ -196,7 +196,7 @@ static func get_action_prompt(
 			return "[%s]" % [action]
 
 
-## Direct joypad polling for specific device ID (prepares Phase 2 multiplayer).
+## Direct joypad polling for specific device ID.
 static func get_joy_movement_vector(
 	device_id: int, deadzone: float = Constants.DEFAULT_ANALOG_DEADZONE
 ) -> Vector2:

@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 1G: Basic HUD
+## Test suite for Basic HUD
 ## Tests HUD scene structure, carried item indicator, contextual interaction prompts,
 ## active order timers with color changes, score/star tracking, and visibility toggle.
 

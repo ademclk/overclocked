@@ -1,8 +1,8 @@
 extends Node
 
-## End-to-End Integration Test Suite for Phase 3E: Chaos Systems Integration & Wiring.
+## End-to-End Integration Test Suite for Chaos Systems Integration & Wiring.
 ## Tests:
-## 1. Workshop scene tree & Phase 3 nodes (OrderSpawner, HazardManager, OverheatingHazard, Tools)
+## 1. Workshop scene tree & chaos nodes (OrderSpawner, HazardManager, OverheatingHazard, Tools)
 ## 2. OrderSpawner & multiple simultaneous orders (stacking, queue cap, priority orders, HUD urgency)
 ## 3. Workshop hazards: Floor spill (slows to 45%, clearable in 2s, speed restored)
 ## 4. Workshop hazards: Power surge (disables station, OFFLINE label, clearable in 3s or auto-expires)
@@ -10,8 +10,8 @@ extends Node
 ## 6. Tool system: Screwdriver requirement on workbench (disassembly/reassembly), tool persistence, safety bounds
 ## 7. Parts shelf stock tracking, depletion, out-of-stock lockout, wrong part rejection, delivery box restock
 ## 8. Multi-player concurrent chaos: 2 players repairing in parallel with 2 screwdrivers and active hazards
-## 9. Single-player backwards compatibility regression (Phase 1-2 behavior when Phase 3 systems disabled/absent)
-## 10. Phase 3 debug hotkeys (Ctrl+F6, Ctrl+F7, Ctrl+F8, Shift+F12, F12)
+## 9. Single-player backwards compatibility regression (core behavior when chaos systems disabled/absent)
+## 10. Chaos debug hotkeys (Ctrl+F6, Ctrl+F7, Ctrl+F8, Shift+F12, F12)
 
 const WORKSHOP_SCENE_PATH: String = "res://scenes/workshop/Workshop_Debug.tscn"
 const MAIN_SCENE_PATH: String = "res://scenes/main/Main.tscn"
@@ -73,7 +73,7 @@ func _create_player(index: int, pos: Vector3 = Vector3.ZERO) -> PlayerCharacter:
 	return player
 
 
-## [1] Test Workshop scene tree, Phase 3 nodes, scenes, signals, and constants
+## [1] Test Workshop scene tree, chaos nodes, scenes, signals, and constants
 func test_workshop_scene_tree_and_phase3_nodes() -> int:
 	print("\n[1] Testing Workshop scene tree, Phase 3 nodes, scenes, signals, and constants...")
 	var err: int = 0
@@ -86,7 +86,7 @@ func test_workshop_scene_tree_and_phase3_nodes() -> int:
 	workshop.auto_start_round = false
 	add_child(workshop)
 
-	# Verify Phase 3 nodes in workshop
+	# Verify chaos nodes in workshop
 	err += _assert(workshop.has_node("OrderSpawner"), "Workshop scene has 'OrderSpawner' node")
 	err += _assert(workshop.has_node("HazardManager"), "Workshop scene has 'HazardManager' node")
 	err += _assert(workshop.has_node("OverheatingHazard"), "Workshop scene has 'OverheatingHazard' node")
@@ -679,7 +679,7 @@ func test_single_player_regression() -> int:
 	return err
 
 
-## [10] Test Phase 3 debug hotkeys
+## [10] Test chaos debug hotkeys
 func test_debug_hotkeys_phase3() -> int:
 	print("\n[10] Testing Phase 3 debug hotkeys (Ctrl+F6, Ctrl+F7, Ctrl+F8, Shift+F12, F12)...")
 	var err: int = 0

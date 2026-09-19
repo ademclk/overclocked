@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 3D: Component Variety & Parts Stock
+## Test suite for Component Variety & Parts Stock
 ## Tests PartsShelf stock limits, out-of-stock feedback, stock display,
 ## wrong part rejection on WorkbenchStation, restocking, and DeliveryBox unpacking.
 

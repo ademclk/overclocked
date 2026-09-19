@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2F: Station Occupancy Rules
+## Test suite for Station Occupancy Rules
 ## Tests:
 ## 1. BaseStation occupancy API (_active_user, set_active_user, clear_active_user, is_occupied)
 ## 2. Occupancy enforcement and rejection (can_player_interact, get_interaction_prompt)

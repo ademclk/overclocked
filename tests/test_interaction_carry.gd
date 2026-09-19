@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 1B: InteractionSystem, CarrySystem, Interactable, and Carriable.
+## Test suite for InteractionSystem, CarrySystem, Interactable, and Carriable.
 
 
 func _ready() -> void:

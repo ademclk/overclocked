@@ -1,7 +1,7 @@
 class_name WorkshopDebug
 extends Node3D
 
-## Workshop level for Overclocked (Phase 1).
+## Workshop level for Overclocked.
 ## Provides room geometry, stations container, runtime entities, order pipeline orchestration,
 ## multiplayer spawn markers, and debug hotkeys.
 
@@ -179,14 +179,14 @@ func start_round() -> void:
 	if auto_start_hazards and hazard_manager and is_instance_valid(hazard_manager):
 		hazard_manager.start()
 
-	# Phase 3C: Tool System setup
+	# Tool System setup
 	if auto_spawn_tools:
 		_spawn_tools()
 
 	if workbench and "requires_tool" in workbench:
 		workbench.requires_tool = workbench_requires_tool
 
-	# Phase 3D: Initialize parts shelf stock
+	# Initialize parts shelf stock
 	if parts_shelf and is_instance_valid(parts_shelf):
 		parts_shelf._init_stock()
 

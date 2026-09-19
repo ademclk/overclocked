@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 3A: Multiple Simultaneous Orders & OrderSpawner
+## Test suite for Multiple Simultaneous Orders & OrderSpawner
 ## Tests OrderSpawner lifecycle, timing, queue caps, difficulty ramping,
 ## priority orders, HUD multiple order rows, and ReceptionDesk queueing.
 

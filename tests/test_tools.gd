@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 3C: Tool System
+## Test suite for Tool System
 ## Tests ToolItem carriable mechanics, Screwdriver scene, workbench tool requirements,
 ## bench tool placement and persistence, wrong tool detection, and WorkshopDebug integration.
 

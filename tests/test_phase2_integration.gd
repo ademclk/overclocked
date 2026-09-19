@@ -1,6 +1,6 @@
 extends Node
 
-## End-to-End Integration Test Suite for Phase 2J: Multi-Player Integration & Wiring.
+## End-to-End Integration Test Suite for Multi-Player Integration & Wiring.
 ## Tests:
 ## 1. Multi-player spawning & visual identity in Workshop scene
 ## 2. Input routing & device isolation (keyboard split P0/P1, joypad devices)

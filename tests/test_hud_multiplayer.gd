@@ -1,6 +1,6 @@
 extends Node
 
-## Test suite for Phase 2G: HUD Adaptation for Multiplayer
+## Test suite for HUD Adaptation for Multiplayer
 ## Tests shared orders, multi-player carried items panel, per-player prompt formatting
 ## (keyboard split & gamepad), slot visibility, player color coding, dynamic join/leave,
 ## and shared scoring.
