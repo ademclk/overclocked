@@ -7,3 +7,4 @@ script = ExtResource("1_comp")
 component_name = "Battery"
 component_id = "phone_battery"
 component_type = "battery"
+component_shelf_category = "phone"

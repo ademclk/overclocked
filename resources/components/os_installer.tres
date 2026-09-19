@@ -7,3 +7,4 @@ script = ExtResource("1_comp")
 component_name = "OS Installer"
 component_id = "os_installer"
 component_type = "software"
+component_shelf_category = "shared"

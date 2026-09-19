@@ -246,12 +246,21 @@ func _get_needed_part() -> ComponentData:
 		for node: Node in devices:
 			if is_instance_valid(node) and not node.is_queued_for_deletion() and node is Device:
 				var dev := node as Device
-				if dev.is_diagnosed and dev.assigned_fault and dev.assigned_fault.broken_component:
+				if dev.is_diagnosed and dev.assigned_fault:
 					if dev.current_repair_state in [
 						RepairState.State.DIAGNOSED,
 						RepairState.State.DISASSEMBLED
 					]:
-						return dev.assigned_fault.broken_component
+						if dev.has_method("get_missing_components"):
+							var missing: Array[ComponentData] = dev.get_missing_components()
+							if not missing.is_empty():
+								return missing[0]
+						if dev.assigned_fault.has_method("get_required_components"):
+							var req: Array[ComponentData] = dev.assigned_fault.get_required_components()
+							if not req.is_empty():
+								return req[0]
+						if dev.assigned_fault.broken_component:
+							return dev.assigned_fault.broken_component
 
 	return get_selected_part()
 
@@ -264,12 +273,19 @@ func _has_active_diagnosed_device() -> bool:
 		for node: Node in devices:
 			if is_instance_valid(node) and not node.is_queued_for_deletion() and node is Device:
 				var dev := node as Device
-				if dev.is_diagnosed and dev.assigned_fault and dev.assigned_fault.broken_component:
+				if dev.is_diagnosed and dev.assigned_fault:
 					if dev.current_repair_state in [
 						RepairState.State.DIAGNOSED,
 						RepairState.State.DISASSEMBLED
 					]:
-						return true
+						if dev.has_method("get_missing_components"):
+							if not dev.get_missing_components().is_empty():
+								return true
+						elif dev.assigned_fault.has_method("get_required_components"):
+							if not dev.assigned_fault.get_required_components().is_empty():
+								return true
+						elif dev.assigned_fault.broken_component != null:
+							return true
 	return false
 
 
@@ -307,6 +323,30 @@ func _create_part_instance(component: ComponentData) -> Carriable:
 					mat.albedo_color = Color(0.95, 0.8, 0.2)
 				"software":
 					mat.albedo_color = Color(0.65, 0.3, 0.85)
+				"keyboard":
+					mat.albedo_color = Color(0.25, 0.25, 0.3)
+				"memory":
+					mat.albedo_color = Color(0.15, 0.75, 0.35)
+				"storage":
+					mat.albedo_color = Color(0.85, 0.45, 0.15)
+				"cooling":
+					mat.albedo_color = Color(0.2, 0.6, 0.85)
+				"thermal":
+					mat.albedo_color = Color(0.75, 0.75, 0.75)
+				"gpu":
+					mat.albedo_color = Color(0.85, 0.2, 0.2)
+				"power":
+					mat.albedo_color = Color(0.9, 0.6, 0.1)
+				"motherboard":
+					mat.albedo_color = Color(0.1, 0.55, 0.25)
+				"optical":
+					mat.albedo_color = Color(0.5, 0.5, 0.6)
+				"port":
+					mat.albedo_color = Color(0.85, 0.75, 0.2)
+				"antenna":
+					mat.albedo_color = Color(0.4, 0.4, 0.45)
+				"audio":
+					mat.albedo_color = Color(0.8, 0.35, 0.6)
 				_:
 					mat.albedo_color = Color(0.3, 0.8, 0.4)
 		else:
@@ -341,14 +381,32 @@ func _update_stock_display() -> void:
 		return
 
 	var lines: Array[String] = []
-	for i in range(available_parts.size()):
-		var part: ComponentData = available_parts[i]
-		if not part:
-			continue
-		var count: int = _stock.get(part.component_id, 0)
-		var status_str: String = "%d" % count if count > 0 else "OUT"
-		var prefix: String = "> " if i == _selected_part_index else "  "
-		lines.append("%s%s: %s" % [prefix, part.component_name, status_str])
+	if available_parts.size() <= 8:
+		for i in range(available_parts.size()):
+			var part: ComponentData = available_parts[i]
+			if not part:
+				continue
+			var count: int = _stock.get(part.component_id, 0)
+			var status_str: String = "%d" % count if count > 0 else "OUT"
+			var prefix: String = "> " if i == _selected_part_index else "  "
+			lines.append("%s%s: %s" % [prefix, part.component_name, status_str])
+	else:
+		var window_size: int = 7
+		var half: int = window_size / 2
+		var start_idx: int = clampi(_selected_part_index - half, 0, maxi(0, available_parts.size() - window_size))
+		var end_idx: int = mini(available_parts.size(), start_idx + window_size)
+		if start_idx > 0:
+			lines.append("  ↑ ... (%d more)" % start_idx)
+		for i in range(start_idx, end_idx):
+			var part: ComponentData = available_parts[i]
+			if not part:
+				continue
+			var count: int = _stock.get(part.component_id, 0)
+			var status_str: String = "%d" % count if count > 0 else "OUT"
+			var prefix: String = "> " if i == _selected_part_index else "  "
+			lines.append("%s%s: %s" % [prefix, part.component_name, status_str])
+		if end_idx < available_parts.size():
+			lines.append("  ↓ ... (%d more)" % (available_parts.size() - end_idx))
 
 	stock_display_label.text = "\n".join(lines)
 
@@ -386,9 +444,34 @@ func _load_default_parts() -> void:
 		return
 
 	var paths: Array[String] = [
+		# Phone
 		"res://resources/components/screen.tres",
 		"res://resources/components/battery.tres",
 		"res://resources/components/os_installer.tres",
+		# Tablet
+		"res://resources/components/tablet_screen.tres",
+		"res://resources/components/tablet_battery.tres",
+		"res://resources/components/tablet_speaker.tres",
+		# Laptop
+		"res://resources/components/laptop_keyboard.tres",
+		"res://resources/components/laptop_ram.tres",
+		"res://resources/components/laptop_ssd.tres",
+		"res://resources/components/laptop_screen.tres",
+		"res://resources/components/laptop_fan.tres",
+		"res://resources/components/thermal_paste.tres",
+		# Desktop PC
+		"res://resources/components/gpu.tres",
+		"res://resources/components/psu.tres",
+		"res://resources/components/motherboard.tres",
+		"res://resources/components/cpu_cooler.tres",
+		"res://resources/components/desktop_ram.tres",
+		"res://resources/components/desktop_ssd.tres",
+		# Game Console
+		"res://resources/components/disc_drive.tres",
+		"res://resources/components/console_hdmi_port.tres",
+		# Router
+		"res://resources/components/router_antenna.tres",
+		"res://resources/components/router_firmware.tres",
 	]
 	for path in paths:
 		if ResourceLoader.exists(path):

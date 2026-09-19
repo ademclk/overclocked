@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ComponentData" format=3]
+
+[ext_resource type="Script" path="res://resources/devices/component_data.gd" id="1_comp"]
+
+[resource]
+script = ExtResource("1_comp")
+component_name = "Graphics Card"
+component_id = "gpu"
+component_type = "gpu"
+component_shelf_category = "desktop"
