@@ -14,3 +14,5 @@ possible_faults = [ExtResource("1_fault_screen"), ExtResource("2_fault_battery")
 base_repair_time = 60.0
 difficulty_tier = 1
 requires_software = false
+device_color = Color(0.85, 0.85, 0.88, 1)
+carry_requires_two_players = false

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/laptop_fan.tres" id="1_fan"]
+[ext_resource type="Resource" path="res://resources/components/thermal_paste.tres" id="2_paste"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="3_fault"]
+
+[resource]
+script = ExtResource("3_fault")
+fault_name = "Overheating (Fan+Paste)"
+fault_id = "laptop_overheating"
+symptom_description = "Cooling fan seized and thermal interface paste dried out."
+broken_components = [ExtResource("1_fan"), ExtResource("2_paste")]
+diagnosis_time = 2.0
+repair_time = 6.0
+requires_software_reinstall = false
+is_multi_fault = true
+fault_display_tags = ["fan", "thermal_paste"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 0.8

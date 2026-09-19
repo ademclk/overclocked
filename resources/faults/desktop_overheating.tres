@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/cpu_cooler.tres" id="1_cooler"]
+[ext_resource type="Resource" path="res://resources/components/thermal_paste.tres" id="2_paste"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="3_fault"]
+
+[resource]
+script = ExtResource("3_fault")
+fault_name = "CPU Overheating"
+fault_id = "desktop_overheating"
+symptom_description = "Heatsink pump failure and dried thermal compound leading to thermal throttle."
+broken_components = [ExtResource("1_cooler"), ExtResource("2_paste")]
+diagnosis_time = 2.0
+repair_time = 7.5
+requires_software_reinstall = false
+is_multi_fault = true
+fault_display_tags = ["cpu_cooler", "thermal_paste"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 0.9

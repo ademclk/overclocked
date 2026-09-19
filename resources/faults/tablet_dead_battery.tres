@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/tablet_battery.tres" id="1_comp"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="2_fault"]
+
+[resource]
+script = ExtResource("2_fault")
+fault_name = "Dead Battery"
+fault_id = "tablet_dead_battery"
+symptom_description = "The high-capacity battery cell fails to hold any charge."
+broken_component = ExtResource("1_comp")
+broken_components = []
+diagnosis_time = 2.0
+repair_time = 3.5
+requires_software_reinstall = false
+is_multi_fault = false
+fault_display_tags = []
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 1.0

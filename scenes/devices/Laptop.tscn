@@ -1,0 +1,75 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/devices/device.gd" id="1_dev"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="2_interact"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_laptop_body"]
+albedo_color = Color(0.15, 0.15, 0.18, 1)
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_laptop_base"]
+material = SubResource("StandardMaterial3D_laptop_body")
+size = Vector3(0.55, 0.04, 0.42)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_laptop_keyboard"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_keyboard"]
+material = SubResource("StandardMaterial3D_laptop_keyboard")
+size = Vector3(0.48, 0.01, 0.22)
+
+[sub_resource type="BoxMesh" id="BoxMesh_laptop_lid"]
+material = SubResource("StandardMaterial3D_laptop_body")
+size = Vector3(0.55, 0.38, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_laptop_screen"]
+albedo_color = Color(0.05, 0.07, 0.1, 1)
+roughness = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_lid_screen"]
+material = SubResource("StandardMaterial3D_laptop_screen")
+size = Vector3(0.50, 0.32, 0.01)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pickup_zone"]
+size = Vector3(1.0, 0.6, 1.0)
+
+[node name="Laptop" type="Node3D"]
+script = ExtResource("1_dev")
+item_name = "Laptop"
+item_type = "device"
+
+[node name="DeviceMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_laptop_base")
+
+[node name="KeyboardMesh" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.04)
+mesh = SubResource("BoxMesh_keyboard")
+
+[node name="LidMesh" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 0.18, -0.19)
+mesh = SubResource("BoxMesh_laptop_lid")
+
+[node name="LidScreenMesh" type="MeshInstance3D" parent="DeviceMesh/LidMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.016)
+mesh = SubResource("BoxMesh_lid_screen")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("2_interact")
+interaction_prompt = "Pick Up Laptop"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("BoxShape3D_pickup_zone")
+
+[node name="DeviceLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+billboard = 1
+text = "Laptop
+[RECEIVED]"
+font_size = 22
+outline_size = 3

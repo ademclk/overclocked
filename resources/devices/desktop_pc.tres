@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DeviceData" format=3]
+
+[ext_resource type="Resource" path="res://resources/faults/desktop_dead_gpu.tres" id="1_gpu"]
+[ext_resource type="Resource" path="res://resources/faults/desktop_blown_psu.tres" id="2_psu"]
+[ext_resource type="Resource" path="res://resources/faults/desktop_dead_ram.tres" id="3_ram"]
+[ext_resource type="Resource" path="res://resources/faults/desktop_overheating.tres" id="4_overheat"]
+[ext_resource type="Resource" path="res://resources/faults/desktop_dead_motherboard.tres" id="5_mobo"]
+[ext_resource type="PackedScene" path="res://scenes/devices/DesktopPC.tscn" id="6_scene"]
+[ext_resource type="Script" path="res://resources/devices/device_data.gd" id="7_dev"]
+
+[resource]
+script = ExtResource("7_dev")
+device_name = "Desktop PC"
+device_id = "desktop_pc"
+description = "Heavy desktop tower workstation. Extreme repair complexity and weight."
+possible_faults = [ExtResource("1_gpu"), ExtResource("2_psu"), ExtResource("3_ram"), ExtResource("4_overheat"), ExtResource("5_mobo")]
+base_repair_time = 180.0
+difficulty_tier = 3
+requires_software = false
+device_color = Color(0.1, 0.1, 0.12, 1)
+device_scene = ExtResource("6_scene")
+carry_requires_two_players = true

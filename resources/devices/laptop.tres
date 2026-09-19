@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DeviceData" format=3]
+
+[ext_resource type="Resource" path="res://resources/faults/laptop_broken_keyboard.tres" id="1_kb"]
+[ext_resource type="Resource" path="res://resources/faults/laptop_dead_ram.tres" id="2_ram"]
+[ext_resource type="Resource" path="res://resources/faults/laptop_failed_ssd.tres" id="3_ssd"]
+[ext_resource type="Resource" path="res://resources/faults/laptop_cracked_screen.tres" id="4_screen"]
+[ext_resource type="Resource" path="res://resources/faults/laptop_overheating.tres" id="5_overheat"]
+[ext_resource type="PackedScene" path="res://scenes/devices/Laptop.tscn" id="6_scene"]
+[ext_resource type="Script" path="res://resources/devices/device_data.gd" id="7_dev"]
+
+[resource]
+script = ExtResource("7_dev")
+device_name = "Laptop"
+device_id = "laptop"
+description = "Consumer laptop — keyboards fail, RAM dies, SSDs give out. Multi-step repairs required."
+possible_faults = [ExtResource("1_kb"), ExtResource("2_ram"), ExtResource("3_ssd"), ExtResource("4_screen"), ExtResource("5_overheat")]
+base_repair_time = 120.0
+difficulty_tier = 2
+requires_software = false
+device_color = Color(0.15, 0.15, 0.18, 1)
+device_scene = ExtResource("6_scene")
+carry_requires_two_players = false

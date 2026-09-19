@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/desktop_ram.tres" id="1_comp"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="2_fault"]
+
+[resource]
+script = ExtResource("2_fault")
+fault_name = "Dead RAM Sticks"
+fault_id = "desktop_dead_ram"
+symptom_description = "Desktop DDR modules failed memory test. Frequent system blue screens."
+broken_component = ExtResource("1_comp")
+broken_components = []
+diagnosis_time = 2.0
+repair_time = 5.5
+requires_software_reinstall = true
+is_multi_fault = false
+fault_display_tags = []
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 1.0

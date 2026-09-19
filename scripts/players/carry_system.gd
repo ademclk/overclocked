@@ -3,12 +3,15 @@ extends Node
 
 ## Attached to PlayerCharacter. Manages picking up, holding, dropping,
 ## and placing one Carriable item at a time.
+## Handles heavy solo carry and two-player cooperative carry for Phase 4.
 
 signal item_picked(item: Carriable)
 signal item_dropped(item: Carriable)
 signal item_placed(item: Carriable, station: Node)
 
 var held_item: Carriable = null
+var is_co_carrying: bool = false
+var co_carry_partner: PlayerCharacter = null
 
 @onready var player: PlayerCharacter = get_parent() as PlayerCharacter
 @onready var carry_position: Marker3D = (
@@ -57,6 +60,80 @@ func pick_up(item: Carriable) -> void:
 	if not is_instance_valid(item):
 		return
 
+	# Handle heavy devices requiring two players
+	if item is Device:
+		var dev := item as Device
+		if dev.device_data and dev.device_data.carry_requires_two_players:
+			var players: Array[Node] = []
+			if player and player.is_inside_tree():
+				players = player.get_tree().get_nodes_in_group("players")
+
+			# Single-player fallback: carry alone at 40% speed
+			if players.size() <= 1:
+				pick_up_solo_heavy(dev)
+				return
+
+			# Multiplayer: First player requests co-carry
+			if not dev.carry_request_active:
+				dev.carry_request_active = true
+				dev.carry_requester = player
+				dev.carry_request_timer = Constants.TWO_PLAYER_CARRY_REQUEST_TIMEOUT
+				var p_idx: int = player.player_index if player else 0
+				SignalBus.device_carry_requested.emit(dev.item_name, p_idx)
+				if dev.interaction_zone:
+					dev.interaction_zone.interaction_prompt = "Help carry %s!" % dev.item_name
+				return
+			# Second player joins the carry request
+			elif dev.carry_requester != player and is_instance_valid(dev.carry_requester):
+				_start_two_player_carry(dev, dev.carry_requester, player)
+				return
+
+	_perform_standard_pickup(item)
+
+
+## Executes single-player heavy carry with reduced movement speed
+func pick_up_solo_heavy(item: Device) -> void:
+	if not can_pick_up() or not is_instance_valid(item):
+		return
+	_perform_standard_pickup(item)
+	if player:
+		player.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED * Constants.ONE_PLAYER_HEAVY_CARRY_SPEED
+
+
+## Starts cooperative two-player carry
+func _start_two_player_carry(dev: Device, p_a: PlayerCharacter, p_b: PlayerCharacter) -> void:
+	dev.carry_request_active = false
+	dev.carry_requester = null
+
+	# Set speeds to 60%
+	p_a.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED * Constants.TWO_PLAYER_CARRY_SPEED_MULTIPLIER
+	p_b.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED * Constants.TWO_PLAYER_CARRY_SPEED_MULTIPLIER
+
+	if p_a.carry_system:
+		p_a.carry_system.held_item = dev
+		p_a.carry_system.is_co_carrying = true
+		p_a.carry_system.co_carry_partner = p_b
+	if p_b.carry_system:
+		p_b.carry_system.held_item = dev
+		p_b.carry_system.is_co_carrying = true
+		p_b.carry_system.co_carry_partner = p_a
+
+	dev.is_held = true
+	dev.held_by = p_a
+	dev.co_carrier_b = p_b
+	dev.release_claim()
+	if dev.interaction_zone:
+		dev.interaction_zone.is_interactable = false
+
+	# Position device midway between the two players
+	dev.global_position = (p_a.global_position + p_b.global_position) * 0.5 + Vector3(0, 1.0, 0)
+
+	SignalBus.device_carry_started.emit(dev.item_name, p_a.player_index, p_b.player_index)
+	p_a.carry_system.item_picked.emit(dev)
+	p_b.carry_system.item_picked.emit(dev)
+
+
+func _perform_standard_pickup(item: Carriable) -> void:
 	# Claim check — prevent two players grabbing simultaneously
 	if not item.try_claim(player):
 		return
@@ -95,8 +172,24 @@ func drop_item() -> void:
 		return
 
 	var item: Carriable = held_item
-	var drop_pos: Vector3 = _calculate_drop_position()
 	held_item = null
+
+	# Reset player speed
+	if player:
+		player.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
+
+	# If this was a co-op carry, clean up partner as well
+	if is_co_carrying and is_instance_valid(co_carry_partner):
+		var partner: PlayerCharacter = co_carry_partner
+		is_co_carrying = false
+		co_carry_partner = null
+		if partner.carry_system:
+			partner.carry_system.held_item = null
+			partner.carry_system.is_co_carrying = false
+			partner.carry_system.co_carry_partner = null
+		partner.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
+
+	var drop_pos: Vector3 = _calculate_drop_position()
 
 	if item.get_parent():
 		item.get_parent().remove_child(item)
@@ -120,6 +213,21 @@ func place_on_station(station: Node) -> void:
 
 	var item: Carriable = held_item
 	held_item = null
+
+	# Reset player speed
+	if player:
+		player.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
+
+	# If this was a co-op carry, clean up partner as well
+	if is_co_carrying and is_instance_valid(co_carry_partner):
+		var partner: PlayerCharacter = co_carry_partner
+		is_co_carrying = false
+		co_carry_partner = null
+		if partner.carry_system:
+			partner.carry_system.held_item = null
+			partner.carry_system.is_co_carrying = false
+			partner.carry_system.co_carry_partner = null
+		partner.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
 
 	if item.get_parent():
 		item.get_parent().remove_child(item)

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DeviceData" format=3]
+
+[ext_resource type="Resource" path="res://resources/faults/tablet_cracked_screen.tres" id="1_screen"]
+[ext_resource type="Resource" path="res://resources/faults/tablet_dead_battery.tres" id="2_battery"]
+[ext_resource type="Resource" path="res://resources/faults/tablet_blown_speaker.tres" id="3_speaker"]
+[ext_resource type="PackedScene" path="res://scenes/devices/Tablet.tscn" id="4_scene"]
+[ext_resource type="Script" path="res://resources/devices/device_data.gd" id="5_dev"]
+
+[resource]
+script = ExtResource("5_dev")
+device_name = "Tablet"
+device_id = "tablet"
+description = "Mid-size consumer tablet. Prone to screen fractures, battery swelling, and blown speaker modules."
+possible_faults = [ExtResource("1_screen"), ExtResource("2_battery"), ExtResource("3_speaker")]
+base_repair_time = 75.0
+difficulty_tier = 1
+requires_software = false
+device_color = Color(0.3, 0.55, 0.75, 1)
+device_scene = ExtResource("4_scene")
+carry_requires_two_players = false

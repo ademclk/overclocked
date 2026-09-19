@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/motherboard.tres" id="1_mobo"]
+[ext_resource type="Resource" path="res://resources/components/gpu.tres" id="2_gpu"]
+[ext_resource type="Resource" path="res://resources/components/desktop_ram.tres" id="3_ram"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="4_fault"]
+
+[resource]
+script = ExtResource("4_fault")
+fault_name = "Dead Motherboard"
+fault_id = "desktop_dead_motherboard"
+symptom_description = "Mainboard VRM failure. Requires full board swap, GPU reseat, and RAM reinstall."
+broken_components = [ExtResource("1_mobo"), ExtResource("2_gpu"), ExtResource("3_ram")]
+diagnosis_time = 2.0
+repair_time = 10.0
+requires_software_reinstall = true
+is_multi_fault = true
+fault_display_tags = ["motherboard", "gpu", "desktop_ram"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 0.5
