@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/cpu_cooler.tres" id="1_cooler"]
+[ext_resource type="Resource" path="res://resources/components/thermal_paste.tres" id="2_paste"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="3_fault"]
+
+[resource]
+script = ExtResource("3_fault")
+fault_name = "Thermal Shutdown"
+fault_id = "console_overheating"
+symptom_description = "Console APU shuts down within seconds of startup due to failed cooling assembly and hardened thermal compound."
+broken_components = [ExtResource("1_cooler"), ExtResource("2_paste")]
+diagnosis_time = 2.0
+repair_time = 6.0
+requires_software_reinstall = false
+is_multi_fault = true
+fault_display_tags = ["cpu_cooler", "thermal_paste"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 0.8

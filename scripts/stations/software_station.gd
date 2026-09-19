@@ -91,6 +91,9 @@ func _is_valid_device_state(device: Carriable) -> bool:
 		return false
 	if device is Device:
 		var dev := device as Device
+		if dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
+			if dev.current_repair_state == RepairState.State.DIAGNOSED:
+				return true
 		return dev.current_repair_state in [
 			RepairState.State.REASSEMBLED,
 			RepairState.State.SOFTWARE_INSTALLED,

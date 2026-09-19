@@ -15,6 +15,7 @@ const DEFAULT_PHONE_DATA: DeviceData = preload("res://resources/devices/phone.tr
 
 @export var device_scene: PackedScene = DEFAULT_DEVICE_SCENE
 @export var device_database: Array[DeviceData] = []
+@export var tier_filter: Array[int] = [1, 2]  ## Which difficulty tiers to spawn
 @export var reception_desk: ReceptionDesk = null
 @export var delivery_counter: DeliveryCounter = null
 @export var auto_spawn_first_order: bool = false
@@ -33,6 +34,8 @@ var _order_counter: int = 0
 func _ready() -> void:
 	add_to_group("order_managers")
 
+	if device_database.is_empty():
+		_load_default_devices()
 	if device_database.is_empty() and DEFAULT_PHONE_DATA:
 		device_database.append(DEFAULT_PHONE_DATA)
 
@@ -47,8 +50,47 @@ func _physics_process(delta: float) -> void:
 		order.tick(delta)
 
 
+## Returns all registered devices matching the current tier filter
+func get_available_devices() -> Array[DeviceData]:
+	if tier_filter.is_empty():
+		return device_database.filter(func(d: DeviceData) -> bool: return d != null and d.is_valid())
+	return device_database.filter(
+		func(d: DeviceData) -> bool:
+			return d != null and d.difficulty_tier in tier_filter and d.is_valid()
+	)
+
+
+## Selects a random device from the filtered pool, or falls back to device_database
+func _pick_device() -> DeviceData:
+	var pool: Array[DeviceData] = get_available_devices()
+	if not pool.is_empty():
+		return pool[randi() % pool.size()]
+	if not device_database.is_empty():
+		return device_database[randi() % device_database.size()]
+	return null
+
+
+## Loads default devices from resources if device_database is not set
+func _load_default_devices() -> void:
+	var paths: Array[String] = [
+		"res://resources/devices/phone.tres",
+		"res://resources/devices/tablet.tres",
+		"res://resources/devices/laptop.tres",
+		"res://resources/devices/game_console.tres",
+		"res://resources/devices/router.tres",
+		"res://resources/devices/desktop_pc.tres",
+	]
+	for path in paths:
+		if ResourceLoader.exists(path):
+			var res: Resource = load(path)
+			if res is DeviceData and (res as DeviceData).is_valid():
+				device_database.append(res as DeviceData)
+
+
 ## Spawns a new order from given DeviceData, or randomly picks from device_database
 func spawn_order(dev_data: DeviceData = null, fault: FaultData = null, target_desk: ReceptionDesk = null) -> Order:
+	if not dev_data:
+		dev_data = _pick_device()
 	if not dev_data and not device_database.is_empty():
 		dev_data = device_database[randi() % device_database.size()]
 	if not dev_data:
@@ -144,8 +186,12 @@ func _setup_order_device(order: Order, target_desk: ReceptionDesk = null) -> voi
 	if not desk:
 		desk = _find_reception_desk()
 
-	if device_scene:
-		var node: Node = device_scene.instantiate()
+	var scene_to_use: PackedScene = device_scene
+	if order.device_data and order.device_data.device_scene:
+		scene_to_use = order.device_data.device_scene
+
+	if scene_to_use:
+		var node: Node = scene_to_use.instantiate()
 		if node is Device:
 			var dev := node as Device
 			dev.initialize(order.device_data, order.assigned_fault)
@@ -154,6 +200,23 @@ func _setup_order_device(order: Order, target_desk: ReceptionDesk = null) -> voi
 				desk.spawn_incoming_device(dev)
 			else:
 				add_child(dev)
+
+
+## Returns a registered DeviceData by its device_id
+func get_device_by_id(target_id: String) -> DeviceData:
+	for dev in device_database:
+		if dev and dev.device_id == target_id:
+			return dev
+	return null
+
+
+## Returns all registered DeviceData matching the specified difficulty tier
+func get_devices_by_tier(tier: int) -> Array[DeviceData]:
+	var result: Array[DeviceData] = []
+	for dev in device_database:
+		if dev and dev.difficulty_tier == tier:
+			result.append(dev)
+	return result
 
 
 func _on_order_completed(stars: int, score: int, order: Order) -> void:

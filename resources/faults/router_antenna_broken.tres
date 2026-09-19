@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/router_antenna.tres" id="1_ant"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="2_fault"]
+
+[resource]
+script = ExtResource("2_fault")
+fault_name = "Broken Antenna"
+fault_id = "router_antenna_broken"
+symptom_description = "External dipole antenna connector snapped off causing signal degradation."
+broken_component = ExtResource("1_ant")
+broken_components = [ExtResource("1_ant")]
+diagnosis_time = 2.0
+repair_time = 3.5
+requires_software_reinstall = false
+is_multi_fault = false
+fault_display_tags = ["antenna"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 1.2

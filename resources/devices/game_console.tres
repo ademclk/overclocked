@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DeviceData" format=3]
+
+[ext_resource type="Resource" path="res://resources/faults/console_disc_drive.tres" id="1_drive"]
+[ext_resource type="Resource" path="res://resources/faults/console_hdmi_port.tres" id="2_hdmi"]
+[ext_resource type="Resource" path="res://resources/faults/console_overheating.tres" id="3_overheat"]
+[ext_resource type="PackedScene" path="res://scenes/devices/GameConsole.tscn" id="4_scene"]
+[ext_resource type="Script" path="res://resources/devices/device_data.gd" id="5_dev"]
+
+[resource]
+script = ExtResource("5_dev")
+device_name = "Game Console"
+device_id = "game_console"
+description = "Gaming console — disc drives jam, HDMI ports snap, and they run HOT."
+possible_faults = [ExtResource("1_drive"), ExtResource("2_hdmi"), ExtResource("3_overheat")]
+base_repair_time = 100.0
+difficulty_tier = 2
+requires_software = false
+device_color = Color(0.08, 0.08, 0.08, 1)
+device_scene = ExtResource("4_scene")
+carry_requires_two_players = false

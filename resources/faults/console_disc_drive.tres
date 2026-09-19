@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Resource" path="res://resources/components/disc_drive.tres" id="1_drive"]
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="2_fault"]
+
+[resource]
+script = ExtResource("2_fault")
+fault_name = "Disc Drive Failure"
+fault_id = "console_disc_drive"
+symptom_description = "Disc drive mechanism is jammed and unable to read optical media."
+broken_component = ExtResource("1_drive")
+broken_components = [ExtResource("1_drive")]
+diagnosis_time = 2.0
+repair_time = 5.0
+requires_software_reinstall = false
+is_multi_fault = false
+fault_display_tags = ["disc_drive"]
+requires_workbench_step_count = 1
+skip_states = []
+intermittent = false
+weight = 1.2

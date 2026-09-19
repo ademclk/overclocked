@@ -189,6 +189,10 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 				if _bench_tool == null:
 					return "Place %s on Workbench" % held.item_name
 				return "Workbench already has a tool"
+			if held is Device:
+				var dev := held as Device
+				if dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
+					return "No hardware repair needed"
 			if _can_accept_workbench_item(held):
 				return "Place Device on Workbench"
 		elif _bench_tool != null and is_instance_valid(_bench_tool):
@@ -514,6 +518,8 @@ func _can_accept_workbench_item(item: Carriable) -> bool:
 		return false
 	if item is Device:
 		var dev := item as Device
+		if dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
+			return false
 		return dev.current_repair_state in [
 			RepairState.State.DIAGNOSED,
 			RepairState.State.DISASSEMBLED,

@@ -27,10 +27,22 @@ const TRANSITIONS: Dictionary = {
 }
 
 
-## Returns whether transitioning from one state to another is allowed
-static func can_transition(from: State, to: State) -> bool:
+## Returns whether transitioning from one state to another is allowed,
+## optionally skipping intermediate states if they are in skip_states.
+static func can_transition(from: State, to: State, skip_states: Array[String] = []) -> bool:
 	if from in TRANSITIONS:
-		return to in TRANSITIONS[from]
+		if to in TRANSITIONS[from]:
+			return true
+		if not skip_states.is_empty():
+			var curr: State = from
+			while curr in TRANSITIONS and not TRANSITIONS[curr].is_empty():
+				var next_state: State = TRANSITIONS[curr][0]
+				if next_state == to:
+					return true
+				if to_string_name(next_state) in skip_states:
+					curr = next_state
+				else:
+					break
 	return false
 
 

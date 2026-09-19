@@ -1,0 +1,82 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/devices/device.gd" id="1_dev"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="2_interact"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_router_body"]
+albedo_color = Color(0.9, 0.9, 0.87, 1)
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_router_base"]
+material = SubResource("StandardMaterial3D_router_body")
+size = Vector3(0.25, 0.04, 0.20)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_antenna"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_antenna"]
+material = SubResource("StandardMaterial3D_antenna")
+top_radius = 0.006
+bottom_radius = 0.008
+height = 0.16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_led_green"]
+albedo_color = Color(0.2, 1.0, 0.3, 1)
+emission_enabled = true
+emission = Color(0.2, 1.0, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_led_dot"]
+material = SubResource("StandardMaterial3D_led_green")
+size = Vector3(0.008, 0.006, 0.008)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pickup_zone"]
+size = Vector3(0.9, 0.5, 0.9)
+
+[node name="Router" type="Node3D"]
+script = ExtResource("1_dev")
+item_name = "Router"
+item_type = "device"
+
+[node name="DeviceMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("BoxMesh_router_base")
+
+[node name="AntennaLeft" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, -0.09, 0.08, -0.09)
+mesh = SubResource("CylinderMesh_antenna")
+
+[node name="AntennaRight" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0.09, 0.08, -0.09)
+mesh = SubResource("CylinderMesh_antenna")
+
+[node name="StatusLed1" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.021, 0.09)
+mesh = SubResource("BoxMesh_led_dot")
+
+[node name="StatusLed2" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.015, 0.021, 0.09)
+mesh = SubResource("BoxMesh_led_dot")
+
+[node name="StatusLed3" type="MeshInstance3D" parent="DeviceMesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01, 0.021, 0.09)
+mesh = SubResource("BoxMesh_led_dot")
+
+[node name="InteractionZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+collision_layer = 8
+collision_mask = 0
+script = ExtResource("2_interact")
+interaction_prompt = "Pick Up Router"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]
+shape = SubResource("BoxShape3D_pickup_zone")
+
+[node name="DeviceLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+billboard = 1
+text = "Router
+[RECEIVED]"
+font_size = 22
+outline_size = 3

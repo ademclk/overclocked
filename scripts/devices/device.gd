@@ -109,7 +109,8 @@ func set_repair_state(state_name: String) -> bool:
 
 ## Validates and transitions device to a target repair state
 func advance_state(new_state: RepairState.State) -> bool:
-	if not RepairState.can_transition(current_repair_state, new_state):
+	var fault_skips: Array[String] = assigned_fault.skip_states if assigned_fault else []
+	if not RepairState.can_transition(current_repair_state, new_state, fault_skips):
 		push_warning(
 			(
 				"Device: Invalid repair transition %s -> %s"
@@ -227,6 +228,9 @@ func install_part() -> bool:
 ## Flashes software and transitions through testing
 func install_software() -> bool:
 	if current_repair_state == RepairState.State.REASSEMBLED:
+		if advance_state(RepairState.State.SOFTWARE_INSTALLED):
+			return advance_state(RepairState.State.TESTED)
+	elif current_repair_state == RepairState.State.DIAGNOSED and assigned_fault and assigned_fault.skip_states.has("DISASSEMBLED"):
 		if advance_state(RepairState.State.SOFTWARE_INSTALLED):
 			return advance_state(RepairState.State.TESTED)
 	elif current_repair_state == RepairState.State.SOFTWARE_INSTALLED:

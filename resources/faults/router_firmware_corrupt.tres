@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FaultData" format=3]
+
+[ext_resource type="Script" path="res://resources/faults/fault_data.gd" id="1_fault"]
+
+[resource]
+script = ExtResource("1_fault")
+fault_name = "Firmware Corruption"
+fault_id = "router_firmware_corrupt"
+symptom_description = "Corrupted bootloader and flash ROM image causes boot loop. Requires reflashing firmware at the software station."
+broken_components = []
+diagnosis_time = 2.0
+repair_time = 2.0
+requires_software_reinstall = true
+is_multi_fault = false
+fault_display_tags = ["firmware"]
+requires_workbench_step_count = 0
+skip_states = ["DISASSEMBLED", "PART_REPLACED", "REASSEMBLED"]
+intermittent = false
+weight = 1.0
