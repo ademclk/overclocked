@@ -12,6 +12,12 @@
 [ext_resource type="Script" path="res://scripts/orders/order_spawner.gd" id="10_order_spawner"]
 [ext_resource type="Script" path="res://scripts/hazards/hazard_manager.gd" id="11_hazard_mgr"]
 [ext_resource type="Script" path="res://scripts/hazards/overheating_hazard.gd" id="12_overheat_hazard"]
+[ext_resource type="Resource" path="res://resources/devices/phone.tres" id="13_phone"]
+[ext_resource type="Resource" path="res://resources/devices/tablet.tres" id="14_tablet"]
+[ext_resource type="Resource" path="res://resources/devices/laptop.tres" id="15_laptop"]
+[ext_resource type="Resource" path="res://resources/devices/game_console.tres" id="16_console"]
+[ext_resource type="Resource" path="res://resources/devices/router.tres" id="17_router"]
+[ext_resource type="Resource" path="res://resources/devices/desktop_pc.tres" id="18_desktop"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_va5xn"]
 albedo_texture = ExtResource("2_kp5f6")
@@ -87,6 +93,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 4.2)
 
 [node name="OrderManager" type="Node" parent="."]
 script = ExtResource("9_order_mgr")
+device_database = [ExtResource("13_phone"), ExtResource("14_tablet"), ExtResource("15_laptop"), ExtResource("16_console"), ExtResource("17_router"), ExtResource("18_desktop")]
+tier_filter = [1, 2]
 
 [node name="OrderSpawner" type="Node" parent="." node_paths=PackedStringArray("order_manager")]
 script = ExtResource("10_order_spawner")

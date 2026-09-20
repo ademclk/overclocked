@@ -54,6 +54,7 @@ signal part_out_of_stock(component_id: String)
 signal part_restocked(component_id: String, new_stock: int)
 
 # Multi-Fault & Device Signals
+signal multi_fault_detected(device_name: String, fault_name: String, required_components: Array)
 signal multi_fault_component_installed(device_name: String, component_name: String, remaining: int)
 signal multi_fault_complete(device_name: String)
 signal device_carry_requested(device_name: String, requesting_player: int)

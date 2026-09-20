@@ -11,6 +11,7 @@ extends Resource
 @export var base_repair_time: float = 60.0
 @export var difficulty_tier: int = 1       ## 1=Phone/Tablet, 2=Laptop, 3=Desktop, 4=Console/Router
 @export var requires_software: bool = false
+@export var device_weight: float = 1.0     ## Relative spawn probability (higher = more common)
 
 ## Visual and carry properties:
 @export var device_color: Color = Color(0.5, 0.5, 0.5)     ## In-world mesh tint for visual identity

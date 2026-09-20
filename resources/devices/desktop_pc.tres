@@ -17,6 +17,7 @@ possible_faults = [ExtResource("1_gpu"), ExtResource("2_psu"), ExtResource("3_ra
 base_repair_time = 180.0
 difficulty_tier = 3
 requires_software = false
+device_weight = 0.5
 device_color = Color(0.1, 0.1, 0.12, 1)
 device_scene = ExtResource("6_scene")
 carry_requires_two_players = true

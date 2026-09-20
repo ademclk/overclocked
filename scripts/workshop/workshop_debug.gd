@@ -466,8 +466,14 @@ func _debug_give_part() -> void:
 	var comp: ComponentData = null
 	if order_manager and order_manager.has_active_orders():
 		var ord: Order = order_manager.get_first_active_order()
-		if ord and ord.assigned_fault and ord.assigned_fault.broken_component:
-			comp = ord.assigned_fault.broken_component
+		if ord and ord.device_instance and ord.device_instance.has_method("get_missing_components"):
+			var missing: Array[ComponentData] = ord.device_instance.get_missing_components()
+			if not missing.is_empty():
+				comp = missing[0]
+		if not comp and ord and ord.assigned_fault:
+			var req: Array[ComponentData] = ord.assigned_fault.get_required_components()
+			if not req.is_empty():
+				comp = req[0]
 
 	if not comp:
 		comp = load("res://resources/components/screen.tres") as ComponentData

@@ -200,16 +200,13 @@ func skip_next_states() -> void:
 ## Diagnoses device, revealing defect information
 func diagnose() -> void:
 	if current_repair_state == RepairState.State.RECEIVED:
-		if advance_state(RepairState.State.DIAGNOSED):
-			is_diagnosed = true
-			diagnosed.emit(assigned_fault)
-			if assigned_fault:
-				SignalBus.diagnosis_revealed.emit(item_name, assigned_fault.fault_name)
-	else:
-		is_diagnosed = true
-		diagnosed.emit(assigned_fault)
-		if assigned_fault:
-			SignalBus.diagnosis_revealed.emit(item_name, assigned_fault.fault_name)
+		advance_state(RepairState.State.DIAGNOSED)
+	is_diagnosed = true
+	diagnosed.emit(assigned_fault)
+	if assigned_fault:
+		SignalBus.diagnosis_revealed.emit(item_name, assigned_fault.fault_name)
+		if assigned_fault.is_multi_fault:
+			SignalBus.multi_fault_detected.emit(item_name, assigned_fault.fault_name, assigned_fault.get_required_components())
 	_update_label()
 
 

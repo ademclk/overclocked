@@ -60,14 +60,31 @@ func get_available_devices() -> Array[DeviceData]:
 	)
 
 
-## Selects a random device from the filtered pool, or falls back to device_database
+## Registers a device in the device database if not already present
+func register_device(data: DeviceData) -> void:
+	if data and data.is_valid() and not (data in device_database):
+		device_database.append(data)
+
+
+## Selects a random device from the filtered pool respecting device_weight, or falls back to device_database
 func _pick_device() -> DeviceData:
 	var pool: Array[DeviceData] = get_available_devices()
-	if not pool.is_empty():
-		return pool[randi() % pool.size()]
-	if not device_database.is_empty():
-		return device_database[randi() % device_database.size()]
-	return null
+	if pool.is_empty() and not device_database.is_empty():
+		pool = device_database.filter(func(d: DeviceData) -> bool: return d != null and d.is_valid())
+	if pool.is_empty():
+		push_warning("OrderManager: No valid devices in tier_filter %s or device_database" % str(tier_filter))
+		return null
+
+	var total_weight: float = 0.0
+	for dev in pool:
+		total_weight += dev.device_weight if dev.device_weight > 0.0 else 1.0
+	var roll: float = randf() * total_weight
+	var cumulative: float = 0.0
+	for dev in pool:
+		cumulative += dev.device_weight if dev.device_weight > 0.0 else 1.0
+		if roll <= cumulative:
+			return dev
+	return pool.back()
 
 
 ## Loads default devices from resources if device_database is not set
@@ -214,7 +231,7 @@ func get_device_by_id(target_id: String) -> DeviceData:
 func get_devices_by_tier(tier: int) -> Array[DeviceData]:
 	var result: Array[DeviceData] = []
 	for dev in device_database:
-		if dev and dev.difficulty_tier == tier:
+		if dev and dev.is_valid() and dev.difficulty_tier == tier:
 			result.append(dev)
 	return result
 
