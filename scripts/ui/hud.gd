@@ -356,6 +356,15 @@ func _update_interaction_prompt() -> void:
 		prompt_label.text = ""
 		return
 
+	# First check if any tracked player is waiting for a co-carry partner
+	for player in candidates:
+		if not player or not is_instance_valid(player) or not player.carry_system:
+			continue
+		if player.carry_system.is_carry_requested():
+			prompt_label.text = "Waiting for second player... (Press [Drop] to cancel)"
+			interaction_prompt.visible = true
+			return
+
 	var best_player: PlayerCharacter = null
 	var best_focus: Interactable = null
 	var min_distance: float = INF
@@ -376,12 +385,27 @@ func _update_interaction_prompt() -> void:
 				best_focus = focus
 
 	if not best_player or not best_focus:
+		# Check if any candidate is currently carrying a heavy device alone
+		for player in candidates:
+			if not player or not is_instance_valid(player) or not player.carry_system:
+				continue
+			if player.carry_system.is_solo_heavy_carrying():
+				prompt_label.text = "⚠️ Carrying alone — very slow!"
+				interaction_prompt.visible = true
+				return
 		interaction_prompt.visible = false
 		prompt_label.text = ""
 		return
 
 	var prompt_text: String = best_focus.get_prompt_text(best_player)
 	if prompt_text.is_empty():
+		for player in candidates:
+			if not player or not is_instance_valid(player) or not player.carry_system:
+				continue
+			if player.carry_system.is_solo_heavy_carrying():
+				prompt_label.text = "⚠️ Carrying alone — very slow!"
+				interaction_prompt.visible = true
+				return
 		interaction_prompt.visible = false
 		prompt_label.text = ""
 	elif not best_focus.can_interact(best_player):
@@ -494,10 +518,13 @@ func _update_repair_progress(device: Device) -> void:
 		return
 
 	if device and is_instance_valid(device):
-		state_label.text = "Current Device: %s [%s]" % [
+		var state_text: String = "Current Device: %s [%s]" % [
 			device.item_name,
 			device.get_repair_state()
 		]
+		if device.device_data and device.device_data.carry_requires_two_players and device.is_held and not device.co_carrier_b:
+			state_text += " - ⚠️ Carrying alone!"
+		state_label.text = state_text
 	elif _order_manager and _order_manager.has_active_orders():
 		var active_order: Order = _order_manager.get_first_active_order()
 		if active_order and active_order.device_instance and is_instance_valid(active_order.device_instance):

@@ -56,14 +56,23 @@ func _process(delta: float) -> void:
 		carry_request_timer -= delta
 		if carry_request_timer <= 0.0:
 			carry_request_active = false
-			if is_instance_valid(carry_requester) and carry_requester.carry_system and carry_requester.carry_system.can_pick_up():
-				carry_requester.carry_system.pick_up_solo_heavy(self)
+			var requester := carry_requester
 			carry_requester = null
+			if is_instance_valid(requester) and requester.carry_system:
+				if requester.carry_system.current_carry_state == CarrySystem.CarryState.CARRY_REQUESTED:
+					requester.carry_system.current_carry_state = CarrySystem.CarryState.IDLE
+				if requester.carry_system.can_pick_up():
+					requester.carry_system.pick_up_solo_heavy(self)
 			if interaction_zone:
 				if device_data and device_data.carry_requires_two_players:
 					interaction_zone.interaction_prompt = "Requires 2 players to carry!"
 				else:
 					interaction_zone.interaction_prompt = "Pick Up %s" % item_name
+			_update_label()
+		else:
+			if interaction_zone:
+				interaction_zone.interaction_prompt = "Help carry %s! (%.1fs)" % [item_name, carry_request_timer]
+			_update_label()
 
 	# Update position between co-carriers during two-player carry
 	if is_held and co_carrier_b and held_by and is_instance_valid(held_by) and is_instance_valid(co_carrier_b):
@@ -152,6 +161,26 @@ func advance_repair_state() -> bool:
 
 		return advance_state(next)
 	return false
+
+
+## Skips consecutive pipeline states listed in the assigned fault's skip_states
+func skip_next_states() -> void:
+	if not assigned_fault or assigned_fault.skip_states.is_empty():
+		return
+	if current_repair_state in RepairState.TRANSITIONS:
+		var next_states: Array = RepairState.TRANSITIONS[current_repair_state]
+		if next_states.is_empty():
+			return
+		var next: RepairState.State = next_states[0]
+		var skipped: bool = false
+		while RepairState.to_string_name(next) in assigned_fault.skip_states:
+			skipped = true
+			if next in RepairState.TRANSITIONS and not RepairState.TRANSITIONS[next].is_empty():
+				next = RepairState.TRANSITIONS[next][0]
+			else:
+				break
+		if skipped:
+			advance_state(next)
 
 
 ## Diagnoses device, revealing defect information
@@ -357,4 +386,6 @@ func _update_label() -> void:
 					tags.append("%s%s" % ["✓" if is_installed else "○", comp.component_name])
 			if not tags.is_empty():
 				text_str += "\n[%s]" % " ".join(tags)
+	if carry_request_active:
+		text_str += "\n[Waiting for P2: %.1fs]" % carry_request_timer
 	device_label.text = text_str

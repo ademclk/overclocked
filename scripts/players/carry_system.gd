@@ -8,10 +8,26 @@ extends Node
 signal item_picked(item: Carriable)
 signal item_dropped(item: Carriable)
 signal item_placed(item: Carriable, station: Node)
+signal carry_state_changed(old_state: CarryState, new_state: CarryState)
+
+enum CarryState {
+	IDLE,
+	CARRYING,
+	CARRY_REQUESTED,
+	CO_CARRYING,
+}
+
+var current_carry_state: CarryState = CarryState.IDLE:
+	set(value):
+		if current_carry_state != value:
+			var old_state := current_carry_state
+			current_carry_state = value
+			carry_state_changed.emit(old_state, current_carry_state)
 
 var held_item: Carriable = null
 var is_co_carrying: bool = false
 var co_carry_partner: PlayerCharacter = null
+var active_carry_request_device: Device = null
 
 @onready var player: PlayerCharacter = get_parent() as PlayerCharacter
 @onready var carry_position: Marker3D = (
@@ -35,13 +51,29 @@ func _unhandled_input(event: InputEvent) -> void:
 		or (player_idx == 0 and event is InputEventAction and event.action == &"drop")
 	)
 
-	if is_drop and is_carrying():
-		drop_item()
-		get_viewport().set_input_as_handled()
+	if is_drop:
+		if current_carry_state == CarryState.CARRY_REQUESTED:
+			cancel_two_player_carry_request()
+			get_viewport().set_input_as_handled()
+		elif is_carrying():
+			drop_item()
+			get_viewport().set_input_as_handled()
 
 
 func is_carrying() -> bool:
 	return held_item != null
+
+
+func is_carry_requested() -> bool:
+	return current_carry_state == CarryState.CARRY_REQUESTED
+
+
+func is_solo_heavy_carrying() -> bool:
+	if is_carrying() and not is_co_carrying:
+		if held_item is Device:
+			var dev := held_item as Device
+			return dev.device_data != null and dev.device_data.carry_requires_two_players
+	return false
 
 
 func get_held_item() -> Carriable:
@@ -49,7 +81,7 @@ func get_held_item() -> Carriable:
 
 
 func can_pick_up() -> bool:
-	return held_item == null
+	return held_item == null and current_carry_state != CarryState.CARRY_REQUESTED
 
 
 func pick_up(item: Carriable) -> void:
@@ -66,7 +98,9 @@ func pick_up(item: Carriable) -> void:
 		if dev.device_data and dev.device_data.carry_requires_two_players:
 			var players: Array[Node] = []
 			if player and player.is_inside_tree():
-				players = player.get_tree().get_nodes_in_group("players")
+				for p in player.get_tree().get_nodes_in_group("players"):
+					if is_instance_valid(p) and not p.is_queued_for_deletion():
+						players.append(p)
 
 			# Single-player fallback: carry alone at 40% speed
 			if players.size() <= 1:
@@ -75,13 +109,7 @@ func pick_up(item: Carriable) -> void:
 
 			# Multiplayer: First player requests co-carry
 			if not dev.carry_request_active:
-				dev.carry_request_active = true
-				dev.carry_requester = player
-				dev.carry_request_timer = Constants.TWO_PLAYER_CARRY_REQUEST_TIMEOUT
-				var p_idx: int = player.player_index if player else 0
-				SignalBus.device_carry_requested.emit(dev.item_name, p_idx)
-				if dev.interaction_zone:
-					dev.interaction_zone.interaction_prompt = "Help carry %s!" % dev.item_name
+				request_two_player_carry(dev)
 				return
 			# Second player joins the carry request
 			elif dev.carry_requester != player and is_instance_valid(dev.carry_requester):
@@ -91,11 +119,48 @@ func pick_up(item: Carriable) -> void:
 	_perform_standard_pickup(item)
 
 
+## Initiates a cooperative two-player carry request with 3-second timeout
+func request_two_player_carry(dev: Device) -> bool:
+	if not can_pick_up() or not is_instance_valid(dev):
+		return false
+
+	active_carry_request_device = dev
+	dev.carry_request_active = true
+	dev.carry_requester = player
+	dev.carry_request_timer = Constants.TWO_PLAYER_CARRY_REQUEST_TIMEOUT
+	current_carry_state = CarryState.CARRY_REQUESTED
+	var p_idx: int = player.player_index if player else 0
+	SignalBus.device_carry_requested.emit(dev.item_name, p_idx)
+	if dev.interaction_zone:
+		dev.interaction_zone.interaction_prompt = "Help carry %s!" % dev.item_name
+	dev._update_label()
+	return true
+
+
+## Cancels an active two-player carry request
+func cancel_two_player_carry_request(dev: Device = null) -> void:
+	var target_dev: Device = dev if dev != null else active_carry_request_device
+	active_carry_request_device = null
+	if current_carry_state == CarryState.CARRY_REQUESTED:
+		current_carry_state = CarryState.IDLE
+	if target_dev and is_instance_valid(target_dev):
+		target_dev.carry_request_active = false
+		target_dev.carry_requester = null
+		if target_dev.interaction_zone:
+			if target_dev.device_data and target_dev.device_data.carry_requires_two_players:
+				target_dev.interaction_zone.interaction_prompt = "Requires 2 players to carry!"
+			else:
+				target_dev.interaction_zone.interaction_prompt = "Pick Up %s" % target_dev.item_name
+		target_dev._update_label()
+
+
 ## Executes single-player heavy carry with reduced movement speed
 func pick_up_solo_heavy(item: Device) -> void:
 	if not can_pick_up() or not is_instance_valid(item):
 		return
+	active_carry_request_device = null
 	_perform_standard_pickup(item)
+	current_carry_state = CarryState.CARRYING
 	if player:
 		player.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED * Constants.ONE_PLAYER_HEAVY_CARRY_SPEED
 
@@ -113,10 +178,14 @@ func _start_two_player_carry(dev: Device, p_a: PlayerCharacter, p_b: PlayerChara
 		p_a.carry_system.held_item = dev
 		p_a.carry_system.is_co_carrying = true
 		p_a.carry_system.co_carry_partner = p_b
+		p_a.carry_system.active_carry_request_device = null
+		p_a.carry_system.current_carry_state = CarryState.CO_CARRYING
 	if p_b.carry_system:
 		p_b.carry_system.held_item = dev
 		p_b.carry_system.is_co_carrying = true
 		p_b.carry_system.co_carry_partner = p_a
+		p_b.carry_system.active_carry_request_device = null
+		p_b.carry_system.current_carry_state = CarryState.CO_CARRYING
 
 	dev.is_held = true
 	dev.held_by = p_a
@@ -145,6 +214,8 @@ func _perform_standard_pickup(item: Carriable) -> void:
 		item.trigger_claim_flash(flash_color)
 
 	held_item = item
+	current_carry_state = CarryState.CARRYING
+	active_carry_request_device = null
 	item.visible = true
 	item.pick_up(player)
 
@@ -173,6 +244,8 @@ func drop_item() -> void:
 
 	var item: Carriable = held_item
 	held_item = null
+	current_carry_state = CarryState.IDLE
+	active_carry_request_device = null
 
 	# Reset player speed
 	if player:
@@ -187,6 +260,8 @@ func drop_item() -> void:
 			partner.carry_system.held_item = null
 			partner.carry_system.is_co_carrying = false
 			partner.carry_system.co_carry_partner = null
+			partner.carry_system.active_carry_request_device = null
+			partner.carry_system.current_carry_state = CarryState.IDLE
 		partner.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
 
 	var drop_pos: Vector3 = _calculate_drop_position()
@@ -213,6 +288,8 @@ func place_on_station(station: Node) -> void:
 
 	var item: Carriable = held_item
 	held_item = null
+	current_carry_state = CarryState.IDLE
+	active_carry_request_device = null
 
 	# Reset player speed
 	if player:
@@ -227,6 +304,8 @@ func place_on_station(station: Node) -> void:
 			partner.carry_system.held_item = null
 			partner.carry_system.is_co_carrying = false
 			partner.carry_system.co_carry_partner = null
+			partner.carry_system.active_carry_request_device = null
+			partner.carry_system.current_carry_state = CarryState.IDLE
 		partner.move_speed = Constants.DEFAULT_PLAYER_MOVE_SPEED
 
 	if item.get_parent():
