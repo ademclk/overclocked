@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://resources/faults/phone_dead_battery.tres" id="2_fault_battery"]
 [ext_resource type="Resource" path="res://resources/faults/phone_software_crash.tres" id="3_fault_software"]
 [ext_resource type="Script" path="res://resources/devices/device_data.gd" id="4_dev"]
+[ext_resource type="PackedScene" path="res://scenes/devices/Phone.tscn" id="5_scene"]
 
 [resource]
 script = ExtResource("4_dev")
@@ -15,4 +16,5 @@ base_repair_time = 60.0
 difficulty_tier = 1
 requires_software = false
 device_color = Color(0.85, 0.85, 0.88, 1)
+device_scene = ExtResource("5_scene")
 carry_requires_two_players = false

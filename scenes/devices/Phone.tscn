@@ -1,8 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/devices/device.gd" id="1_dev"]
-[ext_resource type="Resource" path="res://resources/devices/phone.tres" id="2_phone_data"]
-[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="3_interact"]
+[ext_resource type="Script" path="res://scripts/interfaces/interactable.gd" id="2_interact"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_phone_body"]
 albedo_color = Color(0.85, 0.85, 0.88, 1)
@@ -24,9 +23,8 @@ size = Vector3(0.2, 0.01, 0.3)
 [sub_resource type="BoxShape3D" id="BoxShape3D_pickup_zone"]
 size = Vector3(0.8, 0.5, 0.8)
 
-[node name="Device" type="Node3D"]
+[node name="Phone" type="Node3D"]
 script = ExtResource("1_dev")
-device_data = ExtResource("2_phone_data")
 item_name = "Phone"
 item_type = "device"
 
@@ -42,7 +40,7 @@ mesh = SubResource("BoxMesh_screen")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 collision_layer = 8
 collision_mask = 0
-script = ExtResource("3_interact")
+script = ExtResource("2_interact")
 interaction_prompt = "Pick Up Phone"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionZone"]

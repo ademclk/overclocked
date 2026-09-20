@@ -41,6 +41,18 @@ var co_carrier_b: PlayerCharacter = null
 func _ready() -> void:
 	add_to_group("devices")
 	item_type = "device"
+	if not device_data:
+		var path_map := {
+			"Phone": "res://resources/devices/phone.tres",
+			"Tablet": "res://resources/devices/tablet.tres",
+			"Laptop": "res://resources/devices/laptop.tres",
+			"Desktop PC": "res://resources/devices/desktop_pc.tres",
+			"Game Console": "res://resources/devices/game_console.tres",
+			"Router": "res://resources/devices/router.tres"
+		}
+		if path_map.has(item_name) and ResourceLoader.exists(path_map[item_name]):
+			device_data = load(path_map[item_name]) as DeviceData
+
 	if device_data:
 		item_name = device_data.device_name
 		if not assigned_fault and not device_data.possible_faults.is_empty():
@@ -98,6 +110,8 @@ func initialize(data: DeviceData, fault: FaultData = null) -> void:
 
 ## Applies device_color from DeviceData to the root device mesh
 func _apply_device_color() -> void:
+	if not device_mesh:
+		device_mesh = get_node_or_null("DeviceMesh") as MeshInstance3D
 	if not device_data or not device_mesh:
 		return
 	var mat := StandardMaterial3D.new()
@@ -371,10 +385,12 @@ func _on_interaction_zone_interacted(player: PlayerCharacter) -> void:
 
 func _update_label() -> void:
 	if not device_label:
+		device_label = get_node_or_null("DeviceLabel") as Label3D
+	if not device_label:
 		return
 
 	var text_str := "%s\n[%s]" % [item_name, get_repair_state()]
-	if is_diagnosed and assigned_fault:
+	if (is_diagnosed or current_repair_state != RepairState.State.RECEIVED) and assigned_fault:
 		text_str += "\n(%s)" % assigned_fault.fault_name
 		if assigned_fault.is_multi_fault:
 			var required: Array[ComponentData] = assigned_fault.get_required_components()
@@ -383,7 +399,7 @@ func _update_label() -> void:
 			for comp in required:
 				if comp:
 					var is_installed: bool = not missing.any(func(m: ComponentData) -> bool: return m != null and m.component_id == comp.component_id)
-					tags.append("%s%s" % ["✓" if is_installed else "○", comp.component_name])
+					tags.append("%s %s" % ["✓" if is_installed else "○", comp.component_name])
 			if not tags.is_empty():
 				text_str += "\n[%s]" % " ".join(tags)
 	if carry_request_active:
