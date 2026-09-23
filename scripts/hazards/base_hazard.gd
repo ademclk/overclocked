@@ -50,8 +50,9 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 
 	if interaction_zone and can_be_cleared:
+		interaction_zone.interaction_type = "menu"
 		interaction_zone.interacted.connect(_on_clear_interacted)
-		interaction_zone.interaction_prompt = "Clear %s" % hazard_name
+		interaction_zone.interaction_prompt = "Resolve %s" % hazard_name
 		interaction_zone.can_interact_handler = func(_p: PlayerCharacter) -> bool:
 			return current_state in [HazardState.ACTIVE, HazardState.CLEARING]
 
@@ -84,7 +85,7 @@ func _physics_process(delta: float) -> void:
 				clear()
 
 
-## Begins the warning phase before the hazard activates
+## Begins the warning period before the hazard activates
 func spawn_with_warning(custom_duration: float = -1.0) -> void:
 	current_state = HazardState.WARNING
 	_warning_timer = custom_duration if custom_duration > 0.0 else warning_duration
@@ -224,9 +225,33 @@ func _flash_warning(_delta: float) -> void:
 
 
 func _set_visual_state() -> void:
+	var txt := ""
+	if current_state == HazardState.CLEARING and clear_time > 0.0:
+		txt = "Clearing (%.0f%%)" % [get_clear_progress() * 100.0]
+	else:
+		txt = "⚠ %s" % hazard_name.to_upper()
+
 	if hazard_label:
-		if current_state == HazardState.CLEARING and clear_time > 0.0:
-			hazard_label.text = "Clearing (%.0f%%)" % [get_clear_progress() * 100.0]
-		else:
-			hazard_label.text = "⚠ %s" % hazard_name.to_upper()
+		hazard_label.text = txt
 		hazard_label.visible = current_state in [HazardState.ACTIVE, HazardState.CLEARING]
+
+	if _world_label:
+		_world_label.set_text(txt)
+		_world_label.visible = current_state in [HazardState.ACTIVE, HazardState.CLEARING]
+
+
+var _world_label: WorldLabel = null
+
+
+func get_world_label() -> WorldLabel:
+	return _world_label
+
+
+func setup_world_label() -> WorldLabel:
+	if not _world_label:
+		_world_label = WorldLabel.new()
+		_world_label.target_node = self
+		_world_label.world_offset = Vector3(0, 1.2, 0)
+		_world_label.set_icon_text("⚠", Color(1.0, 0.3, 0.2))
+		_world_label.set_text(hazard_name.to_upper())
+	return _world_label

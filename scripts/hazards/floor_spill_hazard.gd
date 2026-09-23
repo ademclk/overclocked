@@ -10,20 +10,35 @@ enum SpillType {
 	SCREWS,
 }
 
-@export var spill_type: SpillType = SpillType.COFFEE
+@export var spill_type: SpillType = SpillType.COFFEE:
+	set(val):
+		spill_type = val
+		_update_spill_type()
+
 @export var spill_radius: float = 1.2
 @export var spill_color: Color = Color(0.35, 0.2, 0.08, 0.7)  # Coffee brown
 
 
-func _ready() -> void:
+func _update_spill_type() -> void:
 	if spill_type == SpillType.SCREWS:
 		hazard_name = "Dropped Screws"
+		hazard_type = "screws"
 		spill_color = Color(0.6, 0.62, 0.68, 0.8)
+		if interaction_zone:
+			interaction_zone.interaction_prompt = "Sweep Screws"
 	else:
 		hazard_name = "Coffee Spill"
+		hazard_type = "floor"
 		spill_color = Color(0.35, 0.2, 0.08, 0.75)
+		if interaction_zone:
+			interaction_zone.interaction_prompt = "Mop Coffee"
 
-	hazard_type = "floor"
+	if hazard_label:
+		hazard_label.text = "🔩 SCREWS" if spill_type == SpillType.SCREWS else "☕ COFFEE"
+
+
+func _ready() -> void:
+	_update_spill_type()
 	duration = 0.0                # Permanent until cleared
 	warning_duration = 1.0
 	clear_time = Constants.DEFAULT_SPILL_CLEAR_TIME  # 2.0 seconds to mop up / sweep
@@ -73,9 +88,7 @@ func _ready() -> void:
 		hazard_label = lbl
 
 	super._ready()
-
-	if interaction_zone:
-		interaction_zone.interaction_prompt = "Sweep Screws" if spill_type == SpillType.SCREWS else "Mop Coffee"
+	_update_spill_type()
 
 
 func _on_activated() -> void:

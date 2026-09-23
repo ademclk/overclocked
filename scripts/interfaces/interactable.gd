@@ -10,6 +10,7 @@ signal focus_lost(player: PlayerCharacter)
 
 @export var interaction_prompt: String = "Interact"
 @export var is_interactable: bool = true
+@export var interaction_type: String = "instant"  ## "instant" or "menu"
 
 var is_focused: bool = false
 var focused_by_player: PlayerCharacter = null

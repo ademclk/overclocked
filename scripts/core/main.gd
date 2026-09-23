@@ -114,7 +114,7 @@ func _update_debug_label() -> void:
 				if item is Device:
 					carried_info += " [%s]" % item.get_repair_state()
 
-	debug_label.text = "Phase 0 — Overclocked (Phase 1) | State: %s | FPS: %d\nOrder: %s | Device: %s | Carried: %s" % [
+	debug_label.text = "Overclocked | State: %s | FPS: %d\nOrder: %s | Device: %s | Carried: %s" % [
 		state_name, fps, order_info, device_state_info, carried_info
 	]
 

@@ -63,7 +63,7 @@ func _ready() -> void:
 	assert(ui != null, "UI CanvasLayer missing")
 	var debug_label: Label = ui.get_node_or_null("DebugLabel") as Label
 	assert(debug_label != null, "DebugLabel missing from UI")
-	assert(debug_label.text.contains("Phase 0 — Overclocked"), "DebugLabel missing title text")
+	assert(debug_label.text.contains("Overclocked"), "DebugLabel missing title text")
 	print("UI and DebugLabel verified.")
 
 	# 7. Check GameState transition

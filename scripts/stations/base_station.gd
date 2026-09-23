@@ -34,9 +34,14 @@ var current_state: StationState = StationState.IDLE:
 var placed_device: Carriable = null
 var _processing_timer: float = 0.0
 var _is_processing: bool = false
+var _is_rushing: bool = false
 var _station_material: StandardMaterial3D = null
 var _active_user: PlayerCharacter = null
 var _focusing_players: Array[PlayerCharacter] = []
+
+
+func is_rushing() -> bool:
+	return _is_rushing
 
 @onready var device_slot: Marker3D = get_node_or_null("DeviceSlot") as Marker3D
 @onready var interaction_zone: Interactable = get_node_or_null("InteractionZone") as Interactable
@@ -56,6 +61,7 @@ func _ready() -> void:
 	collision_mask = 0
 
 	if interaction_zone:
+		interaction_zone.interaction_type = "instant"
 		interaction_zone.interacted.connect(_on_interacted)
 		interaction_zone.focus_gained.connect(_on_focus_gained)
 		interaction_zone.focus_lost.connect(_on_focus_lost)
@@ -67,12 +73,47 @@ func _ready() -> void:
 	_update_visual_state()
 
 
+var _world_label: WorldLabel = null
+
+
+func get_world_label() -> WorldLabel:
+	return _world_label
+
+
+func setup_world_label() -> WorldLabel:
+	if not _world_label:
+		_world_label = WorldLabel.new()
+		_world_label.target_node = self
+		_world_label.world_offset = Vector3(0, 1.8, 0)
+		_world_label.set_station_style(station_type)
+		_world_label.set_text(station_name.to_upper())
+	return _world_label
+
+
 func _physics_process(delta: float) -> void:
 	if _is_processing:
-		_processing_timer += delta
+		_is_rushing = false
+		if _active_user and is_instance_valid(_active_user):
+			var pid: int = _active_user.player_index
+			var rush_action := MultiplayerInput.action_name(pid, "rush")
+			if Input.is_action_pressed(rush_action) or Input.is_action_pressed(&"rush"):
+				_is_rushing = true
+
+		var speed_mult: float = (1.0 / Constants.RUSH_SPEED_BONUS) if _is_rushing else 1.0
+		_processing_timer += delta * speed_mult
 		_update_progress_indicator()
 		_apply_processing_wobble()
+
 		if _processing_timer >= processing_time:
+			if _is_rushing and randf() < Constants.RUSH_FAILURE_CHANCE:
+				# Fumbled!
+				_processing_timer = maxf(0.0, processing_time - Constants.RUSH_FAILURE_PENALTY)
+				SignalBus.repair_fumbled.emit(station_name)
+				SignalBus.repair_rushed.emit(station_name, false)
+				return
+
+			if _is_rushing:
+				SignalBus.repair_rushed.emit(station_name, true)
 			_complete_processing()
 
 
@@ -124,6 +165,20 @@ func remove_device() -> Carriable:
 	_update_visual_state()
 	device_removed.emit(device)
 	return device
+
+
+func open_examination_workstation(player: PlayerCharacter) -> void:
+	if not player or not is_inside_tree():
+		return
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("open_examination_panel"):
+		var dev: Device = placed_device as Device if placed_device is Device else null
+		if not dev and player.carry_system and player.carry_system.is_carrying():
+			var held: Carriable = player.carry_system.get_held_item()
+			if held is Device:
+				dev = held as Device
+		if dev:
+			hud.open_examination_panel(player, dev, self)
 
 
 func start_processing() -> void:
@@ -271,9 +326,29 @@ func _set_highlight(highlighted: bool) -> void:
 		_station_material.emission_enabled = false
 
 
+func _exit_tree() -> void:
+	if _world_label and is_instance_valid(_world_label):
+		_world_label.queue_free()
+		_world_label = null
+
+
 func _update_visual_state() -> void:
 	_update_progress_indicator()
 	_set_highlight(not _focusing_players.is_empty())
+	if _world_label and is_instance_valid(_world_label):
+		match current_state:
+			StationState.PROCESSING:
+				_world_label.set_text("%s (%d%%)" % [station_name.to_upper(), int(get_progress() * 100.0)])
+			StationState.COMPLETE:
+				_world_label.set_text("%s [READY]" % station_name.to_upper())
+			_:
+				if placed_device and is_instance_valid(placed_device):
+					if placed_device.has_method("get_repair_state"):
+						_world_label.set_text("%s [%s]" % [station_name.to_upper(), placed_device.get_repair_state()])
+					else:
+						_world_label.set_text("%s [%s]" % [station_name.to_upper(), placed_device.item_name])
+				else:
+					_world_label.set_text(station_name.to_upper())
 
 
 func _update_progress_indicator() -> void:

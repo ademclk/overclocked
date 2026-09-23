@@ -27,9 +27,9 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 	if not placed_device and player.carry_system.is_carrying():
 		return _is_valid_device_state(player.carry_system.get_held_item())
 
-	# If diagnosed and complete, player can pick up if hands are free
-	if placed_device and current_state == StationState.COMPLETE:
-		return player.carry_system.can_pick_up()
+	# If device on bench, can interact to inspect/work
+	if placed_device:
+		return true
 
 	return false
 
@@ -45,9 +45,13 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 		if _is_valid_device_state(player.carry_system.get_held_item()):
 			return "Diagnose Device"
 
-	if placed_device and current_state == StationState.COMPLETE:
-		if player and player.carry_system and player.carry_system.can_pick_up():
-			return "Pick Up Diagnosed Device"
+	if placed_device:
+		var is_diag: bool = (current_state == StationState.COMPLETE) or (placed_device is Device and (placed_device as Device).is_diagnosed)
+		if is_diag:
+			if player and player.carry_system and player.carry_system.can_pick_up():
+				return "Pick Up Diagnosed Device"
+			return "Diagnosed (Hands Full)"
+		return "Inspect & Diagnose"
 
 	return ""
 
@@ -60,17 +64,24 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if not player or not player.carry_system:
 		return
 
+	var is_diag: bool = placed_device != null and ((current_state == StationState.COMPLETE) or (placed_device is Device and (placed_device as Device).is_diagnosed))
+
 	if not placed_device and player.carry_system.is_carrying():
 		var device: Carriable = player.carry_system.get_held_item()
 		if _is_valid_device_state(device):
 			set_active_user(player)
 			player.carry_system.place_on_station(self)
 			accept_device(device)
-			start_processing()
-	elif placed_device and current_state == StationState.COMPLETE:
-		if player.carry_system.can_pick_up():
-			var device: Carriable = remove_device()
-			player.carry_system.pick_up(device)
+			if not (device is Device):
+				start_processing()
+			else:
+				current_state = StationState.OCCUPIED
+				_update_visual_state()
+	elif placed_device and is_diag and player.carry_system.can_pick_up():
+		var device: Carriable = remove_device()
+		player.carry_system.pick_up(device)
+	elif placed_device:
+		open_examination_workstation(player)
 
 
 func _on_processing_done() -> void:

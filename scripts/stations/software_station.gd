@@ -27,8 +27,8 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 	if not placed_device and player.carry_system.is_carrying():
 		return _is_valid_device_state(player.carry_system.get_held_item())
 
-	if placed_device and current_state == StationState.COMPLETE:
-		return player.carry_system.can_pick_up()
+	if placed_device:
+		return true
 
 	return false
 
@@ -44,9 +44,13 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 		if _is_valid_device_state(player.carry_system.get_held_item()):
 			return "Install Software"
 
-	if placed_device and current_state == StationState.COMPLETE:
-		if player and player.carry_system and player.carry_system.can_pick_up():
-			return "Pick Up Tested Device"
+	if placed_device:
+		var is_tested: bool = (current_state == StationState.COMPLETE) or (placed_device.has_method("get_repair_state") and str(placed_device.get_repair_state()) == "TESTED")
+		if is_tested:
+			if player and player.carry_system and player.carry_system.can_pick_up():
+				return "Pick Up Tested Device"
+			return "Tested (Hands Full)"
+		return "Inspect & Flash OS"
 
 	return ""
 
@@ -59,17 +63,25 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if not player or not player.carry_system:
 		return
 
+	var is_tested: bool = placed_device != null and ((current_state == StationState.COMPLETE) or (placed_device.has_method("get_repair_state") and str(placed_device.get_repair_state()) == "TESTED"))
+
 	if not placed_device and player.carry_system.is_carrying():
 		var device: Carriable = player.carry_system.get_held_item()
 		if _is_valid_device_state(device):
 			set_active_user(player)
 			player.carry_system.place_on_station(self)
 			accept_device(device)
-			start_processing()
-	elif placed_device and current_state == StationState.COMPLETE:
-		if player.carry_system.can_pick_up():
-			var device: Carriable = remove_device()
-			player.carry_system.pick_up(device)
+			if not (device is Device):
+				start_processing()
+			else:
+				current_state = StationState.OCCUPIED
+				_update_visual_state()
+	elif placed_device and is_tested and player.carry_system.can_pick_up():
+		var dev = remove_device()
+		if dev:
+			player.carry_system.pick_up(dev)
+	elif placed_device:
+		open_examination_workstation(player)
 
 
 func _on_processing_done() -> void:

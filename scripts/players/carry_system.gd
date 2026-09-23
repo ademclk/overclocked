@@ -3,7 +3,7 @@ extends Node
 
 ## Attached to PlayerCharacter. Manages picking up, holding, dropping,
 ## and placing one Carriable item at a time.
-## Handles heavy solo carry and two-player cooperative carry for Phase 4.
+## Handles heavy solo carry and two-player cooperative carry.
 
 signal item_picked(item: Carriable)
 signal item_dropped(item: Carriable)
@@ -132,7 +132,7 @@ func request_two_player_carry(dev: Device) -> bool:
 	var p_idx: int = player.player_index if player else 0
 	SignalBus.device_carry_requested.emit(dev.item_name, p_idx)
 	if dev.interaction_zone:
-		dev.interaction_zone.interaction_prompt = "Help carry %s!" % dev.item_name
+		dev.interaction_zone.interaction_prompt = "Hold [Interact] to help carry %s" % dev.item_name
 	dev._update_label()
 	return true
 

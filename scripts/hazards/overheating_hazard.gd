@@ -62,7 +62,7 @@ func _physics_process(delta: float) -> void:
 
 		data["timer"] += delta
 
-		# Warning phase — visual feedback on device
+		# Warning stage — visual feedback on device
 		if data["timer"] >= overheat_time * warning_threshold and not data.get("warned", false):
 			data["warned"] = true
 			_apply_overheat_warning(device)

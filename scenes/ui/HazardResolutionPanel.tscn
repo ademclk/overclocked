@@ -1,0 +1,250 @@
+[gd_scene format=3 uid="uid://ditxjd7ogix5"]
+
+[ext_resource type="Script" path="res://scripts/ui/hazard_resolution_panel.gd" id="1_hzpan"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0, 0, 0, 0.22)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sub"]
+bg_color = Color(0.03, 0.04, 0.06, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.32, 0.52, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.08, 0.24, 0.45, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.7, 1.0, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.12, 0.36, 0.68, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.9, 1.0, 1.0)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="Environment" id="Environment_3d"]
+background_mode = 1
+background_color = Color(0, 0, 0, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.65, 0.7, 0.78, 1)
+ambient_light_energy = 1.2
+
+[node name="HazardResolutionPanel" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+script = ExtResource("1_hzpan")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HazardTitle" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "🧹 HAZARD RESOLUTION — 3D PUZZLE"
+
+[node name="HazardTypeBadge" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
+theme_override_font_sizes/font_size = 14
+text = "[ FLOOR SPILL ]"
+
+[node name="StatusBadge" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "[ 0 / 4 RESOLVED ]"
+
+[node name="CloseHint" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.72, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "[Esc] Leave"
+
+[node name="Content" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="3DSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ViewportPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/3DSection"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
+
+[node name="3DViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel"]
+layout_mode = 2
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer"]
+own_world_3d = true
+transparent_bg = true
+handle_input_locally = false
+gui_disable_input = true
+size = Vector2i(780, 520)
+render_target_update_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport"]
+environment = SubResource("Environment_3d")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport"]
+transform = Transform3D(0.866, -0.353, 0.353, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 1.2, 2.5, 1.8)
+light_color = Color(1, 0.95, 0.9, 1)
+light_energy = 1.3
+
+[node name="OmniLight3D" type="OmniLight3D" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+light_color = Color(0.85, 0.92, 1, 1)
+light_energy = 1.0
+omni_range = 4.0
+
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 0.707, 0.707, 0, -0.707, 0.707, 0, 1.0, 1.0)
+fov = 48.0
+
+[node name="HazardModelRoot" type="Node3D" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport"]
+
+[node name="HotspotOverlay" type="Control" parent="MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ControlHints" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Content/3DSection"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="HintRotate" type="Label" parent="MarginContainer/VBoxContainer/Content/3DSection/ControlHints"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "🖱 Drag: Rotate View  •  Scroll: Zoom"
+
+[node name="HintAction" type="Label" parent="MarginContainer/VBoxContainer/Content/3DSection/ControlHints"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 12
+text = "[E] / Click Hotspot: Perform Action"
+
+[node name="InfoSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TaskPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection/TaskPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TaskTitle" type="Label" parent="MarginContainer/VBoxContainer/Content/InfoSection/TaskPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "TASK OBJECTIVE"
+
+[node name="TaskDesc" type="Label" parent="MarginContainer/VBoxContainer/Content/InfoSection/TaskPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.88, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "Clean up the hazard to resume workshop operations."
+autowrap_mode = 2
+
+[node name="ProgressPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection/ProgressPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProgressTitle" type="Label" parent="MarginContainer/VBoxContainer/Content/InfoSection/ProgressPanel/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+text = "PROGRESS"
+
+[node name="ProgressBar" type="ProgressBar" parent="MarginContainer/VBoxContainer/Content/InfoSection/ProgressPanel/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
+max_value = 100.0
+step = 1.0
+value = 0.0
+show_percentage = true
+
+[node name="TargetChecklist" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection/ProgressPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ActionPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sub")
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PrimaryActionButton" type="Button" parent="MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "[E] PERFORM ACTION"
+
+[node name="CancelButton" type="Button" parent="MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "[Esc] Step Away"

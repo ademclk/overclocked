@@ -140,6 +140,37 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	_update_stock_display()
 
 
+## Programmatically dispenses a part by ID or type, decrementing stock (returns null if out of stock)
+func dispense_part(component_id_or_type: String) -> Carriable:
+	var comp_id: String = _resolve_component_id(component_id_or_type)
+	if comp_id.is_empty():
+		return null
+	if stock_tracking_enabled:
+		var current_qty: int = get_stock(comp_id)
+		if current_qty <= 0:
+			_flash_out_of_stock()
+			SignalBus.part_out_of_stock.emit(comp_id)
+			return null
+		var remaining: int = current_qty - 1
+		_stock[comp_id] = remaining
+		stock_changed.emit(comp_id, remaining)
+		SignalBus.part_dispensed.emit(comp_id, remaining)
+		if remaining <= 0:
+			stock_depleted.emit(comp_id)
+			SignalBus.part_out_of_stock.emit(comp_id)
+
+	var comp: ComponentData = null
+	for c in available_parts:
+		if c and c.component_id == comp_id:
+			comp = c
+			break
+	if not comp:
+		return null
+	var part: Carriable = _create_part_instance(comp)
+	_update_stock_display()
+	return part
+
+
 ## Initializes finite stock counts for all available parts
 func _init_stock() -> void:
 	_stock.clear()

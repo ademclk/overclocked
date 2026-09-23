@@ -33,6 +33,7 @@ var _bump_cooldown_timer: float = 0.0
 var _last_motion_speed: float = 0.0
 var _original_model_pos: Vector3 = Vector3.ZERO
 var _stun_tween: Tween = null
+var _movement_locked: bool = false
 
 # References populated dynamically or wired in 1B
 var interaction_system: InteractionSystem = null
@@ -65,8 +66,24 @@ func _ready() -> void:
 	_detect_child_systems()
 
 
+func set_movement_locked(locked: bool) -> void:
+	_movement_locked = locked
+	if _movement_locked:
+		velocity = Vector3.ZERO
+		_update_movement_state(0.0)
+
+
+func is_movement_locked() -> bool:
+	return _movement_locked
+
+
 func _physics_process(delta: float) -> void:
 	_bump_cooldown_timer = maxf(0.0, _bump_cooldown_timer - delta)
+
+	if _movement_locked:
+		velocity = Vector3.ZERO
+		move_and_slide()
+		return
 
 	if _is_stunned:
 		_stun_timer -= delta
@@ -278,4 +295,3 @@ func get_last_motion_speed() -> float:
 ## Returns remaining bump cooldown in seconds
 func get_bump_cooldown() -> float:
 	return _bump_cooldown_timer
-

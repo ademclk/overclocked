@@ -64,10 +64,18 @@ var _banner_tween: Tween = null
 var current_score: int = 0
 var current_stars: int = 0
 
+# Contextual Interaction & Inspection UI Elements
+var combo_display: Label = null
+var _interaction_menus: Dictionary = {}
+var _examination_panel: DeviceExaminationPanel = null
+var _tool_durability_bars: Dictionary = {}
+
 
 func _ready() -> void:
+	add_to_group("hud")
 	_connect_signal_bus()
 	_setup_carry_slots()
+	_setup_contextual_ui()
 	_update_star_display(0)
 	_update_score_display(0)
 	_update_carried_item()
@@ -273,6 +281,10 @@ func _connect_signal_bus() -> void:
 	SignalBus.diagnosis_revealed.connect(_on_bus_diagnosis_revealed)
 	SignalBus.interaction_prompt_changed.connect(_on_bus_prompt_changed)
 	SignalBus.carried_item_changed.connect(_on_bus_carried_item_changed)
+	SignalBus.combo_updated.connect(_on_bus_combo_updated)
+	SignalBus.combo_broken.connect(_on_bus_combo_broken)
+	SignalBus.tool_durability_changed.connect(_on_bus_tool_durability_changed)
+	SignalBus.device_examined.connect(_on_bus_device_examined)
 
 
 func _auto_discover_dependencies() -> void:
@@ -390,9 +402,12 @@ func _update_interaction_prompt() -> void:
 			if not player or not is_instance_valid(player) or not player.carry_system:
 				continue
 			if player.carry_system.is_solo_heavy_carrying():
+				var flash: float = sin(Time.get_ticks_msec() * 0.008) * 0.5 + 0.5
 				prompt_label.text = "⚠️ Carrying alone — very slow!"
+				prompt_label.modulate = Color(1.0, 0.3 + 0.7 * flash, 0.3 + 0.7 * flash)
 				interaction_prompt.visible = true
 				return
+		prompt_label.modulate = Color.WHITE
 		interaction_prompt.visible = false
 		prompt_label.text = ""
 		return
@@ -403,12 +418,16 @@ func _update_interaction_prompt() -> void:
 			if not player or not is_instance_valid(player) or not player.carry_system:
 				continue
 			if player.carry_system.is_solo_heavy_carrying():
+				var flash: float = sin(Time.get_ticks_msec() * 0.008) * 0.5 + 0.5
 				prompt_label.text = "⚠️ Carrying alone — very slow!"
+				prompt_label.modulate = Color(1.0, 0.3 + 0.7 * flash, 0.3 + 0.7 * flash)
 				interaction_prompt.visible = true
 				return
+		prompt_label.modulate = Color.WHITE
 		interaction_prompt.visible = false
 		prompt_label.text = ""
 	elif not best_focus.can_interact(best_player):
+		prompt_label.modulate = Color.WHITE
 		prompt_label.text = prompt_text
 		interaction_prompt.visible = true
 	elif prompt_text.begins_with("Press "):
@@ -569,16 +588,53 @@ func _update_active_orders() -> void:
 
 
 func _update_order_row(entry: HBoxContainer, order: Order) -> void:
+	var icon: TextureRect = entry.get_node_or_null("DeviceIcon") as TextureRect
+	var tier_label: Label = entry.get_node_or_null("TierLabel") as Label
 	var name_label: Label = entry.get_node_or_null("DeviceName") as Label
 	var timer_bar: ProgressBar = entry.get_node_or_null("TimerBar") as ProgressBar
+
+	if icon:
+		if order.device_data and order.device_data.device_color:
+			icon.modulate = order.device_data.device_color
+		else:
+			icon.modulate = Color.WHITE
+
+	if not tier_label:
+		tier_label = Label.new()
+		tier_label.name = "TierLabel"
+		tier_label.custom_minimum_size = Vector2(24, 0)
+		tier_label.theme_override_font_sizes = {"font_size": 14}
+		tier_label.theme_override_colors = {"font_color": Color(1.0, 0.85, 0.2)}
+		tier_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		entry.add_child(tier_label)
+		entry.move_child(tier_label, 1)
+
+	if tier_label:
+		if order.device_data:
+			var tier: int = clampi(order.device_data.difficulty_tier, 1, 4)
+			tier_label.text = "★".repeat(tier)
+			tier_label.visible = true
+		else:
+			tier_label.visible = false
 
 	if name_label:
 		var dev_name: String = order.get_device_name()
 		if order.device_instance and is_instance_valid(order.device_instance):
 			if order.device_instance.is_diagnosed and order.assigned_fault:
 				if order.assigned_fault.is_multi_fault:
-					var tag_list: String = ", ".join(order.assigned_fault.fault_display_tags) if not order.assigned_fault.fault_display_tags.is_empty() else order.assigned_fault.fault_name
-					dev_name += " (%s - Needs: %s)" % [order.assigned_fault.fault_name, tag_list]
+					var tag_str := ""
+					if not order.assigned_fault.fault_display_tags.is_empty():
+						var tags: PackedStringArray = []
+						for t in order.assigned_fault.fault_display_tags:
+							tags.append(t.capitalize())
+						tag_str = " + ".join(tags)
+					else:
+						var comp_names: PackedStringArray = []
+						for c in order.assigned_fault.get_required_components():
+							if c:
+								comp_names.append(c.component_name)
+						tag_str = " + ".join(comp_names) if not comp_names.is_empty() else order.assigned_fault.fault_name
+					dev_name += " (%s - Needs: %s)" % [order.assigned_fault.fault_name, tag_str]
 				else:
 					dev_name += " (%s)" % order.assigned_fault.fault_name
 			dev_name += " [%s]" % order.device_instance.get_repair_state()
@@ -586,7 +642,12 @@ func _update_order_row(entry: HBoxContainer, order: Order) -> void:
 			dev_name = "⚡ " + dev_name
 		name_label.text = dev_name
 
-	if order.is_priority:
+	var ratio: float = order.get_time_ratio()
+	if ratio < 0.3:
+		# Device Priority Glow (<30% time remaining causes order entry to pulse red)
+		var pulse: float = (sin(Time.get_ticks_msec() * 0.012) + 1.0) * 0.5
+		entry.modulate = Color(1.0, 0.35 + 0.65 * (1.0 - pulse), 0.35 + 0.65 * (1.0 - pulse))
+	elif order.is_priority:
 		# Priority styling: red-orange tint for visual urgency
 		entry.modulate = Color(1.0, 0.7, 0.3)
 	else:
@@ -597,7 +658,7 @@ func _update_order_row(entry: HBoxContainer, order: Order) -> void:
 		timer_bar.value = order.time_remaining
 
 		# Color change based on urgency: >50% green, 20-50% yellow, 10-20% red, <10% flashing red
-		var ratio: float = order.get_time_ratio()
+		ratio = order.get_time_ratio()
 		if ratio >= 0.5:
 			timer_bar.modulate = COLOR_TIMER_HEALTHY
 		elif ratio >= 0.2:
@@ -817,3 +878,156 @@ func _on_bus_prompt_changed(text: String) -> void:
 func _on_bus_carried_item_changed(item_name: String) -> void:
 	if carried_item_name:
 		carried_item_name.text = item_name if not item_name.is_empty() else "—"
+
+
+func _setup_contextual_ui() -> void:
+	if score_panel and not combo_display:
+		combo_display = Label.new()
+		combo_display.name = "ComboDisplay"
+		combo_display.add_theme_font_size_override("font_size", 16)
+		combo_display.add_theme_color_override("font_color", Color(1.0, 0.75, 0.2))
+		combo_display.visible = false
+		score_panel.add_child(combo_display)
+
+
+func _on_bus_combo_updated(multiplier: float, streak: int) -> void:
+	if combo_display:
+		if multiplier > 1.0 and streak > 0:
+			combo_display.visible = true
+			combo_display.text = "🔥 ×%.1f (%d)" % [multiplier, streak]
+			# Pop animation
+			var tween := create_tween()
+			combo_display.scale = Vector2(1.25, 1.25)
+			tween.tween_property(combo_display, "scale", Vector2.ONE, 0.2)
+		else:
+			combo_display.visible = false
+
+
+func _on_bus_combo_broken() -> void:
+	if combo_display:
+		combo_display.visible = false
+
+
+func _on_bus_tool_durability_changed(tool_id: String, current: int, max_val: int) -> void:
+	# Update durability display if tracked
+	if _tool_durability_bars.has(tool_id):
+		var bar: ProgressBar = _tool_durability_bars[tool_id] as ProgressBar
+		if bar and is_instance_valid(bar):
+			bar.max_value = max_val
+			bar.value = current
+
+
+var _active_minigame: RepairMinigame = null
+
+
+func start_repair_minigame(player: PlayerCharacter, device: Device, _minigame_type: String = "screw", on_complete: Callable = Callable(), on_fail: Callable = Callable()) -> void:
+	if _active_minigame and is_instance_valid(_active_minigame):
+		_active_minigame.queue_free()
+		_active_minigame = null
+
+	var minigame_scene: PackedScene = load("res://scenes/ui/RepairMinigame.tscn")
+	if not minigame_scene:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+
+	var mg := minigame_scene.instantiate() as RepairMinigame
+	_active_minigame = mg
+	add_child(mg)
+
+	mg.minigame_completed.connect(func(_rating: int) -> void:
+		_active_minigame = null
+		mg.queue_free()
+		if player and is_instance_valid(player):
+			player.set_movement_locked(false)
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+	mg.minigame_skipped.connect(func() -> void:
+		_active_minigame = null
+		mg.queue_free()
+		if player and is_instance_valid(player):
+			player.set_movement_locked(false)
+		if on_complete.is_valid():
+			on_complete.call()
+	)
+
+	mg.minigame_failed.connect(func() -> void:
+		_active_minigame = null
+		mg.queue_free()
+		if player and is_instance_valid(player):
+			player.set_movement_locked(false)
+		if on_fail.is_valid():
+			on_fail.call()
+	)
+
+	mg.start_minigame(player, device, device.assigned_fault if device else null)
+
+
+func _setup_world_labels_for_stations() -> void:
+	var tree := get_tree()
+	if not tree:
+		return
+	var stations: Array[Node] = tree.get_nodes_in_group("stations")
+	for s in stations:
+		if s is BaseStation and s.has_method("setup_world_label"):
+			var wl: WorldLabel = s.setup_world_label()
+			if wl and not wl.is_inside_tree():
+				add_child(wl)
+
+
+func _on_bus_device_examined(player_id: int, _device_name: String) -> void:
+	if _examination_panel and _examination_panel.is_open():
+		return
+
+	var player: PlayerCharacter = null
+	for p in _tracked_players:
+		if is_instance_valid(p) and p.player_index == player_id:
+			player = p
+			break
+	if not player and not _tracked_players.is_empty():
+		player = _tracked_players[0]
+
+	if player and player.carry_system and player.carry_system.is_carrying():
+		var held: Carriable = player.carry_system.get_held_item()
+		if held is Device:
+			open_examination_panel(player, held as Device)
+
+
+func get_interaction_menu_for_player(player_idx: int = 0) -> InteractionMenu:
+	if _interaction_menus.has(player_idx) and is_instance_valid(_interaction_menus[player_idx]):
+		return _interaction_menus[player_idx]
+
+	var menu_scene: PackedScene = load("res://scenes/ui/InteractionMenu.tscn")
+	if menu_scene:
+		var menu := menu_scene.instantiate() as InteractionMenu
+		menu.name = "InteractionMenu_P%d" % player_idx
+		menu.owning_player_index = player_idx
+		add_child(menu)
+		menu.position = Vector2(1380, 280)
+		_interaction_menus[player_idx] = menu
+		return menu
+	return null
+
+
+func open_examination_panel(player: PlayerCharacter, device: Device, station: BaseStation = null) -> void:
+	if not _examination_panel or not is_instance_valid(_examination_panel):
+		var panel_scene: PackedScene = load("res://scenes/ui/DeviceExaminationPanel.tscn")
+		if panel_scene:
+			_examination_panel = panel_scene.instantiate() as DeviceExaminationPanel
+			add_child(_examination_panel)
+	if _examination_panel:
+		_examination_panel.open_panel(player, device, station)
+
+
+var _hazard_panel: HazardResolutionPanel = null
+
+func open_hazard_minigame(player: PlayerCharacter, hazard: BaseHazard) -> void:
+	if not _hazard_panel or not is_instance_valid(_hazard_panel):
+		var panel_scene: PackedScene = load("res://scenes/ui/HazardResolutionPanel.tscn")
+		if panel_scene:
+			_hazard_panel = panel_scene.instantiate() as HazardResolutionPanel
+			add_child(_hazard_panel)
+	if _hazard_panel:
+		_hazard_panel.open_hazard_panel(player, hazard)

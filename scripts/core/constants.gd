@@ -92,3 +92,26 @@ const DEVICE_COLOR_LAPTOP: Color = Color(0.15, 0.15, 0.18)
 const DEVICE_COLOR_DESKTOP: Color = Color(0.1, 0.1, 0.12)
 const DEVICE_COLOR_CONSOLE: Color = Color(0.08, 0.08, 0.08)
 const DEVICE_COLOR_ROUTER: Color = Color(0.9, 0.9, 0.87)
+
+# UI Scale & Readability
+const UI_SCALE_REFERENCE_HEIGHT: int = 1080
+const WORLD_LABEL_MIN_FONT_SIZE: int = 16
+const WORLD_LABEL_MAX_FONT_SIZE: int = 28
+const STATION_ICON_SIZE: Vector2 = Vector2(36, 36)
+const INTERACTION_MENU_WIDTH: float = 360.0       ## Pixels at 1080p
+const EXAMINATION_PANEL_HEIGHT_RATIO: float = 0.4  ## 40% of screen height
+
+# Combo Streak & Game Feel
+const COMBO_WINDOW_SECONDS: float = 10.0
+const COMBO_TIERS: Array[float] = [1.0, 1.5, 2.0, 2.5, 3.0]
+const RUSH_SPEED_BONUS: float = 0.7
+const RUSH_FAILURE_CHANCE: float = 0.15
+const RUSH_FAILURE_PENALTY: float = 3.0
+const TOOL_DEFAULT_DURABILITY: int = 8
+const MINIGAME_SKIP_PENALTY_TIER_1: float = 3.0
+const MINIGAME_SKIP_PENALTY_TIER_2: float = 5.0
+const MINIGAME_SKIP_PENALTY_TIER_3: float = 8.0
+
+# Contextual Interaction System
+const MENU_AUTO_CLOSE_DISTANCE: float = 2.4
+const QUICK_ACTION_THRESHOLD: int = 1  ## Skip menu if only N valid options

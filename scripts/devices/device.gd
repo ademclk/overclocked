@@ -33,6 +33,7 @@ var carry_request_active: bool = false
 var carry_requester: PlayerCharacter = null
 var carry_request_timer: float = 0.0
 var co_carrier_b: PlayerCharacter = null
+var _overheat_hold_timer: float = 0.0
 
 @onready var device_label: Label3D = get_node_or_null("DeviceLabel") as Label3D
 @onready var device_mesh: MeshInstance3D = get_node_or_null("DeviceMesh") as MeshInstance3D
@@ -83,12 +84,23 @@ func _process(delta: float) -> void:
 			_update_label()
 		else:
 			if interaction_zone:
-				interaction_zone.interaction_prompt = "Help carry %s! (%.1fs)" % [item_name, carry_request_timer]
+				interaction_zone.interaction_prompt = "Hold [Interact] to help carry %s (%.1fs)" % [item_name, carry_request_timer]
 			_update_label()
 
 	# Update position between co-carriers during two-player carry
 	if is_held and co_carrier_b and held_by and is_instance_valid(held_by) and is_instance_valid(co_carrier_b):
 		global_position = (held_by.global_position + co_carrier_b.global_position) * 0.5 + Vector3(0, 1.0, 0)
+
+	# Hot Potato Mechanic: holding an overheated device for too long causes burning
+	if is_held and has_meta("is_overheated"):
+		_overheat_hold_timer += delta
+		if _overheat_hold_timer >= 5.0:
+			SignalBus.hazard_wrong_choice.emit(item_name, "hot_potato")
+			_overheat_hold_timer = 0.0
+	else:
+		_overheat_hold_timer = 0.0
+
+
 
 
 ## Configures device data and assigned fault at creation
@@ -402,3 +414,21 @@ func _update_label() -> void:
 	if carry_request_active:
 		text_str += "\n[Waiting for P2: %.1fs]" % carry_request_timer
 	device_label.text = text_str
+	if _world_label:
+		_world_label.set_text(text_str)
+
+
+var _world_label: WorldLabel = null
+
+
+func get_world_label() -> WorldLabel:
+	return _world_label
+
+
+func setup_world_label() -> WorldLabel:
+	if not _world_label:
+		_world_label = WorldLabel.new()
+		_world_label.target_node = self
+		_world_label.world_offset = Vector3(0, 0.8, 0)
+		_world_label.set_text(item_name)
+	return _world_label

@@ -291,7 +291,7 @@ func test_debug_overlay_information() -> int:
 	main._update_debug_label()
 	var text: String = main.debug_label.text
 
-	err += _assert(text.contains("Phase 0 — Overclocked"), "Debug overlay contains title")
+	err += _assert(text.contains("Overclocked"), "Debug overlay contains title")
 	err += _assert(text.contains("State: PLAYING"), "Debug overlay shows GameState PLAYING")
 	err += _assert(text.contains("FPS:"), "Debug overlay shows FPS counter")
 	err += _assert(text.contains("Order:"), "Debug overlay shows active Order information")

@@ -8,6 +8,13 @@ extends Resource
 @export var fault_id: String = ""
 @export_multiline var symptom_description: String = ""
 
+## Backward compatibility alias for symptom_description
+var description: String:
+	get:
+		return symptom_description
+	set(val):
+		symptom_description = val
+
 ## Single broken component. Returns broken_components[0] if populated.
 @export var broken_component: ComponentData = null
 

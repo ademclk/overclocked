@@ -60,3 +60,30 @@ signal multi_fault_complete(device_name: String)
 signal device_carry_requested(device_name: String, requesting_player: int)
 signal device_carry_started(device_name: String, player_a: int, player_b: int)
 signal device_tier_unlocked(tier: int)
+
+# Interaction Menu Signals
+signal interaction_menu_opened(player_id: int, target_name: String)
+signal interaction_menu_closed(player_id: int)
+signal interaction_menu_option_selected(player_id: int, option_id: String)
+
+# Examination Signals
+signal device_examined(player_id: int, device_name: String)
+
+# Minigame Signals
+signal minigame_started(player_id: int, minigame_type: String)
+signal minigame_completed(player_id: int, minigame_type: String, rating: int)
+signal minigame_failed(player_id: int, minigame_type: String)
+signal minigame_skipped(player_id: int, minigame_type: String)
+
+# Combo Streak & Game Feel Signals
+signal combo_updated(multiplier: float, streak: int)
+signal combo_broken()
+signal repair_rushed(station_name: String, success: bool)
+signal repair_fumbled(station_name: String)
+signal tool_durability_changed(tool_id: String, current: int, max_val: int)
+signal tool_broken(tool_id: String)
+
+# Hazard Resolution Signals
+signal hazard_resolution_started(hazard_name: String, method: String)
+signal hazard_resolution_completed(hazard_name: String, method: String)
+signal hazard_wrong_choice(hazard_name: String, choice: String)

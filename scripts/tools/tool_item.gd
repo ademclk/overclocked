@@ -4,11 +4,37 @@ extends Carriable
 ## A reusable tool (screwdriver, soldering iron, etc.) that players carry.
 ## Tools are not consumed — they persist across repairs. Limited quantity per workshop.
 
+signal durability_changed(current: int, max_val: int)
+signal tool_broken()
+
 @export var tool_id: String = "screwdriver"
 @export var tool_display_name: String = "Screwdriver"
 @export var tool_color: Color = Color(0.85, 0.15, 0.15)  # Red handle
+@export var max_durability: int = Constants.TOOL_DEFAULT_DURABILITY
+@export var current_durability: int = Constants.TOOL_DEFAULT_DURABILITY
+@export var is_breakable: bool = true
 
 var spawn_position: Vector3 = Vector3.ZERO
+
+
+func use_tool() -> bool:
+	if not is_breakable:
+		return true
+	if current_durability <= 0:
+		return false
+	current_durability -= 1
+	durability_changed.emit(current_durability, max_durability)
+	SignalBus.tool_durability_changed.emit(tool_id, current_durability, max_durability)
+	if current_durability == 0:
+		tool_broken.emit()
+		SignalBus.tool_broken.emit(tool_id)
+	return true
+
+
+func repair_tool() -> void:
+	current_durability = max_durability
+	durability_changed.emit(current_durability, max_durability)
+	SignalBus.tool_durability_changed.emit(tool_id, current_durability, max_durability)
 
 
 func _ready() -> void:

@@ -8,9 +8,16 @@ var station: BaseStation = null
 
 
 func _ready() -> void:
+	interaction_type = "instant"
 	if not station and get_parent() is BaseStation:
 		station = get_parent() as BaseStation
 	super._ready()
+
+
+func get_menu_options(player: PlayerCharacter) -> Array[InteractionMenuOption]:
+	if station:
+		return StationMenuBuilder.build_menu(station, player)
+	return []
 
 
 func can_interact(player: PlayerCharacter) -> bool:

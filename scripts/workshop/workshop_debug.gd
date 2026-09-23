@@ -360,6 +360,87 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+		# Device debug hotkeys: Ctrl+1 through Ctrl+6 to spawn specific devices, Ctrl+T to toggle Tier 3
+		if event.ctrl_pressed:
+			match event.keycode:
+				KEY_1:
+					_debug_spawn_device("phone")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_2:
+					_debug_spawn_device("tablet")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_3:
+					_debug_spawn_device("laptop")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_4:
+					_debug_spawn_device("game_console")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_5:
+					_debug_spawn_device("router")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_6:
+					_debug_spawn_device("desktop_pc")
+					get_viewport().set_input_as_handled()
+					return
+				KEY_T:
+					_toggle_tier_filter()
+					get_viewport().set_input_as_handled()
+					return
+
+		# Action name mappings if configured in InputMap
+		if InputMap.has_action("debug_spawn_tablet") and event.is_action_pressed("debug_spawn_tablet"):
+			_debug_spawn_device("tablet")
+			get_viewport().set_input_as_handled()
+			return
+		if InputMap.has_action("debug_spawn_laptop") and event.is_action_pressed("debug_spawn_laptop"):
+			_debug_spawn_device("laptop")
+			get_viewport().set_input_as_handled()
+			return
+		if InputMap.has_action("debug_spawn_desktop") and event.is_action_pressed("debug_spawn_desktop"):
+			_debug_spawn_device("desktop_pc")
+			get_viewport().set_input_as_handled()
+			return
+		if InputMap.has_action("debug_spawn_console") and event.is_action_pressed("debug_spawn_console"):
+			_debug_spawn_device("game_console")
+			get_viewport().set_input_as_handled()
+			return
+		if InputMap.has_action("debug_spawn_router") and event.is_action_pressed("debug_spawn_router"):
+			_debug_spawn_device("router")
+			get_viewport().set_input_as_handled()
+			return
+		if InputMap.has_action("debug_toggle_tier3") and event.is_action_pressed("debug_toggle_tier3"):
+			_toggle_tier_filter()
+			get_viewport().set_input_as_handled()
+			return
+
+		if event.shift_pressed:
+			match event.keycode:
+				KEY_F5:
+					_toggle_menu_system()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_F6:
+					_debug_force_open_examination()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_F7:
+					_debug_max_combo()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_F8:
+					_debug_set_tools_low_durability()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_F9:
+					_debug_spawn_all_hazards()
+					get_viewport().set_input_as_handled()
+					return
+
 		match event.keycode:
 			KEY_F5:
 				_debug_spawn_order()
@@ -541,6 +622,32 @@ func _debug_spawn_priority_order() -> void:
 			print("[Debug Ctrl+F6] OrderManager force-spawned priority order '%s'" % ord.order_id)
 
 
+## Spawns a device of specific type at reception desk for testing
+func _debug_spawn_device(device_id: String) -> Order:
+	if not order_manager:
+		return null
+	var device_data: DeviceData = order_manager.get_device_by_id(device_id)
+	if not device_data:
+		push_warning("WorkshopDebug: No device found with id: %s" % device_id)
+		return null
+	var order: Order = order_manager.spawn_order(device_data)
+	if order:
+		print("[DEBUG] Spawned %s order '%s'" % [device_id, order.order_id])
+	return order
+
+
+## Toggles between tier 1-2 and tier 1-2-3 (enables Desktop PC)
+func _toggle_tier_filter() -> void:
+	if not order_manager:
+		return
+	if 3 in order_manager.tier_filter:
+		order_manager.tier_filter = [1, 2]
+		print("[DEBUG] Tier filter: Tier 1-2 (no Desktop)")
+	else:
+		order_manager.tier_filter = [1, 2, 3]
+		print("[DEBUG] Tier filter: All tiers (Desktop enabled)")
+
+
 func _debug_spawn_power_surge() -> void:
 	if hazard_manager and is_instance_valid(hazard_manager):
 		var h: BaseHazard = hazard_manager.try_spawn_hazard("surge")
@@ -720,4 +827,70 @@ func _debug_dump_state() -> void:
 			st.station_name, BaseStation.StationState.keys()[st.current_state], placed, user_desc
 		])
 	print("=======================================================\n")
+
+
+func _toggle_menu_system() -> void:
+	var stations := get_tree().get_nodes_in_group("stations")
+	var hazards := get_tree().get_nodes_in_group("hazards")
+	var current_type := "instant"
+	for s in stations:
+		if s.has_node("InteractionZone"):
+			var iz: Interactable = s.get_node("InteractionZone") as Interactable
+			if iz:
+				current_type = iz.interaction_type
+				break
+
+	var new_type := "menu" if current_type == "instant" else "instant"
+	for s in stations:
+		if s.has_node("InteractionZone"):
+			var iz: Interactable = s.get_node("InteractionZone") as Interactable
+			if iz:
+				iz.interaction_type = new_type
+	for h in hazards:
+		if h.has_node("InteractionZone"):
+			var iz: Interactable = h.get_node("InteractionZone") as Interactable
+			if iz:
+				iz.interaction_type = new_type
+	print("[Debug Shift+F5] Toggled interaction mode to: %s" % new_type)
+
+
+func _debug_force_open_examination() -> void:
+	var player: PlayerCharacter = get_player(_debug_focused_player)
+	if not player and not active_players.is_empty():
+		player = active_players[0]
+	var dev: Device = null
+	if player and player.carry_system and player.carry_system.is_carrying():
+		if player.carry_system.get_held_item() is Device:
+			dev = player.carry_system.get_held_item() as Device
+	if not dev:
+		var devices := get_tree().get_nodes_in_group("devices")
+		if not devices.is_empty():
+			dev = devices[0] as Device
+	if dev and player:
+		StationMenuBuilder._trigger_device_examination(player, dev)
+		print("[Debug Shift+F6] Opened examination panel for %s" % dev.item_name)
+	else:
+		print("[Debug Shift+F6] No device or player found for examination.")
+
+
+func _debug_max_combo() -> void:
+	for i in range(5):
+		ComboTracker.on_repair_completed()
+	print("[Debug Shift+F7] Combo set to streak %d (×%.1f)" % [ComboTracker.get_streak(), ComboTracker.get_multiplier()])
+
+
+func _debug_set_tools_low_durability() -> void:
+	var tools := get_tree().get_nodes_in_group("tools")
+	for t in tools:
+		if t is ToolItem:
+			t.current_durability = 1
+			t.durability_changed.emit(1, t.max_durability)
+	print("[Debug Shift+F8] All tools set to 1 durability")
+
+
+func _debug_spawn_all_hazards() -> void:
+	_debug_spawn_floor_hazard()
+	if hazard_manager and is_instance_valid(hazard_manager):
+		hazard_manager.spawn_hazard_by_type("surge")
+	print("[Debug Shift+F9] Spawned hazards stress test")
 

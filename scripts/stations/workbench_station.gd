@@ -223,10 +223,10 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 			if carry.is_carrying():
 				var held: Carriable = carry.get_held_item()
 				if held is ToolItem and (held as ToolItem).tool_id == required_tool_id:
-					return "Disassemble Device"
+					return "Inspect & Disassemble"
 			if not _has_required_tool(player):
 				return "Needs %s" % required_tool_name
-			return "Disassemble Device"
+			return "Inspect & Disassemble"
 
 		"DISASSEMBLED":
 			if carry.is_carrying():
@@ -249,7 +249,7 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 							if m:
 								names.append(m.component_name)
 						return "Needs: %s" % ", ".join(names)
-			return "Need Replacement Part"
+			return "Inspect & Install Parts"
 
 		"PART_REPLACED":
 			if carry.is_carrying():
@@ -258,9 +258,7 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 					return "Place %s and Reassemble" % held.item_name
 			if not _has_required_tool(player):
 				return "Needs %s to reassemble" % required_tool_name
-			if carry.can_pick_up():
-				return "Reassemble Device"
-			return "Hands Full - Cannot Reassemble"
+			return "Inspect & Reassemble"
 
 		"REASSEMBLED":
 			if carry.can_pick_up():
@@ -315,36 +313,34 @@ func _on_interacted(player: PlayerCharacter) -> void:
 
 	# Branch 4: Player carrying a tool -> place tool on bench
 	if carry.is_carrying() and carry.get_held_item() is ToolItem and _bench_tool == null:
-		var placed_ok := _try_place_tool(player)
-		if placed_ok and placed_device:
-			var r_state_check: String = str(placed_device.get_repair_state())
-			if r_state_check == "DIAGNOSED" and _has_required_tool(player):
-				set_active_user(player)
-				_start_disassembly()
+		_try_place_tool(player)
 		return
 
 	# Branch 5: Device multi-step pipeline
 	var r_state: String = str(placed_device.get_repair_state())
 	match r_state:
 		"DIAGNOSED":
-			if _has_required_tool(player):
-				set_active_user(player)
-				_start_disassembly()
+			open_examination_workstation(player)
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				_try_install_part(player)
 			else:
-				_try_pick_up(player)
+				open_examination_workstation(player)
 		"PART_REPLACED":
-			if _has_required_tool(player):
-				_try_reassemble(player)
+			open_examination_workstation(player)
 		"REASSEMBLED":
-			_try_pick_up(player)
+			if carry.can_pick_up() and not carry.is_carrying():
+				_try_pick_up(player)
+			else:
+				open_examination_workstation(player)
 		_:
-			_try_pick_up(player)
+			if carry.can_pick_up() and not carry.is_carrying():
+				_try_pick_up(player)
+			else:
+				open_examination_workstation(player)
 
 
-## Helper: Places a carried device onto empty workbench and auto-starts disassembly if diagnosed and tool present
+## Helper: Places a carried device onto empty workbench
 func _try_place_device(player: PlayerCharacter) -> bool:
 	var carry: CarrySystem = player.carry_system
 	if not carry.is_carrying():
@@ -358,20 +354,8 @@ func _try_place_device(player: PlayerCharacter) -> bool:
 	carry.place_on_station(self)
 	accept_device(item)
 
-	# Auto-start disassembly for DIAGNOSED devices if tool is available
-	var is_diag: bool = false
-	if item is Device:
-		is_diag = (item as Device).current_repair_state == RepairState.State.DIAGNOSED
-	elif item.has_method("get_repair_state"):
-		is_diag = str(item.get_repair_state()) == "DIAGNOSED"
-
-	if is_diag:
-		if _has_required_tool(player):
-			_start_disassembly()
-		else:
-			current_state = StationState.OCCUPIED
-			_update_visual_state()
-
+	current_state = StationState.OCCUPIED
+	_update_visual_state()
 	return true
 
 
