@@ -102,7 +102,14 @@ func _on_interacted(player: PlayerCharacter) -> void:
 			return
 		return
 
-	# Case 2: Player taking a replacement component
+	# Case 2: Open visual catalog panel if HUD is present
+	if is_inside_tree():
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("open_parts_shelf_panel"):
+			hud.open_parts_shelf_panel(player, self)
+			return
+
+	# Case 3: Player taking a replacement component (headless/fallback)
 	if not carry.can_pick_up():
 		return
 

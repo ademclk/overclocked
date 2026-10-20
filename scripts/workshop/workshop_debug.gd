@@ -51,10 +51,20 @@ var _workshop_tools: Array[ToolItem] = []
 	if has_node("Stations/Workbench")
 	else (get_node_or_null("Workbench") if has_node("Workbench") else get_node_or_null("WorkbenchStation"))
 )
+@onready var repair_table: RepairTableStation = (
+	get_node_or_null("Stations/RepairTable") as RepairTableStation
+	if has_node("Stations/RepairTable")
+	else get_node_or_null("RepairTable") as RepairTableStation
+)
 @onready var parts_shelf: PartsShelf = (
 	get_node_or_null("Stations/PartsShelf") as PartsShelf
 	if has_node("Stations/PartsShelf")
 	else get_node_or_null("PartsShelf") as PartsShelf
+)
+@onready var trash_bin: TrashBin = (
+	get_node_or_null("Stations/TrashBin") as TrashBin
+	if has_node("Stations/TrashBin")
+	else get_node_or_null("TrashBin") as TrashBin
 )
 @onready var software_station: SoftwareStation = (
 	get_node_or_null("Stations/SoftwareStation") as SoftwareStation
@@ -207,8 +217,11 @@ func _connect_order_pipeline() -> void:
 
 	if not overheating_hazard:
 		overheating_hazard = get_node_or_null("OverheatingHazard") as OverheatingHazard
-	if overheating_hazard and workbench is WorkbenchStation:
-		overheating_hazard.register_workbench(workbench as WorkbenchStation)
+	if overheating_hazard:
+		if repair_table:
+			overheating_hazard.register_workbench(repair_table)
+		if workbench is WorkbenchStation:
+			overheating_hazard.register_workbench(workbench as WorkbenchStation)
 
 	if reception_desk:
 		order_manager.reception_desk = reception_desk

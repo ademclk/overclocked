@@ -1031,3 +1031,15 @@ func open_hazard_minigame(player: PlayerCharacter, hazard: BaseHazard) -> void:
 			add_child(_hazard_panel)
 	if _hazard_panel:
 		_hazard_panel.open_hazard_panel(player, hazard)
+
+
+var _parts_shelf_panel: PartsShelfPanel = null
+
+func open_parts_shelf_panel(player: PlayerCharacter, shelf: PartsShelf) -> void:
+	if not _parts_shelf_panel or not is_instance_valid(_parts_shelf_panel):
+		var panel_scene: PackedScene = load("res://scenes/ui/PartsShelfPanel.tscn")
+		if panel_scene:
+			_parts_shelf_panel = panel_scene.instantiate() as PartsShelfPanel
+			add_child(_parts_shelf_panel)
+	if _parts_shelf_panel:
+		_parts_shelf_panel.open_shelf_panel(player, shelf)

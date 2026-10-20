@@ -96,7 +96,7 @@ func _physics_process(delta: float) -> void:
 		if _active_user and is_instance_valid(_active_user):
 			var pid: int = _active_user.player_index
 			var rush_action := MultiplayerInput.action_name(pid, "rush")
-			if Input.is_action_pressed(rush_action) or Input.is_action_pressed(&"rush"):
+			if (InputMap.has_action(rush_action) and Input.is_action_pressed(rush_action)) or (InputMap.has_action(&"rush") and Input.is_action_pressed(&"rush")):
 				_is_rushing = true
 
 		var speed_mult: float = (1.0 / Constants.RUSH_SPEED_BONUS) if _is_rushing else 1.0

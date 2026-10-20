@@ -156,6 +156,12 @@ func set_station_style(station_type: String) -> void:
 		"workbench":
 			set_icon_text(icon, Color(1.0, 0.75, 0.25))
 			_set_panel_theme(Color(0.14, 0.08, 0.04, 0.92), Color(1.0, 0.55, 0.15, 0.95))
+		"repair_table":
+			set_icon_text(icon, Color(0.4, 0.85, 1.0))
+			_set_panel_theme(Color(0.04, 0.10, 0.14, 0.92), Color(0.25, 0.65, 0.95, 0.95))
+		"trash", "trash_bin":
+			set_icon_text(icon, Color(0.85, 0.45, 0.45))
+			_set_panel_theme(Color(0.12, 0.06, 0.06, 0.92), Color(0.8, 0.35, 0.35, 0.95))
 		"diagnostic", "diagnostic_bench":
 			set_icon_text(icon, Color(0.35, 0.85, 1.0))
 			_set_panel_theme(Color(0.04, 0.08, 0.14, 0.92), Color(0.2, 0.75, 1.0, 0.95))
@@ -204,6 +210,10 @@ static func get_station_icon_symbol(station_type: String) -> String:
 	match station_type:
 		"workbench":
 			return "🔧"
+		"repair_table":
+			return "🛠️"
+		"trash", "trash_bin":
+			return "🗑️"
 		"diagnostic", "diagnostic_bench":
 			return "🔍"
 		"parts_shelf", "shelf":

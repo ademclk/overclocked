@@ -13,7 +13,7 @@ signal device_cooled(device: Device)
 
 ## Tracks each device on a workbench: {device_instance_id: {timer, device, station, warned, overheated}}
 var _device_timers: Dictionary = {}
-var _monitored_workbenches: Array[WorkbenchStation] = []
+var _monitored_workbenches: Array[BaseStation] = []
 
 
 func _ready() -> void:
@@ -76,8 +76,8 @@ func _physics_process(delta: float) -> void:
 		_device_timers.erase(device_id)
 
 
-## Registers a workbench station to monitor
-func register_workbench(wb: WorkbenchStation) -> void:
+## Registers a repair station or workbench to monitor
+func register_workbench(wb: BaseStation) -> void:
 	if not wb or _monitored_workbenches.has(wb):
 		return
 	_monitored_workbenches.append(wb)
@@ -93,22 +93,25 @@ func _discover_workbenches() -> void:
 	var tree := get_tree()
 	if not tree:
 		return
+	for node in tree.get_nodes_in_group("repair_tables"):
+		if node is BaseStation:
+			register_workbench(node as BaseStation)
 	for node in tree.get_nodes_in_group("stations"):
-		if node is WorkbenchStation:
-			register_workbench(node as WorkbenchStation)
+		if node is RepairTableStation or node is WorkbenchStation:
+			register_workbench(node as BaseStation)
 	for node in tree.get_nodes_in_group("workbenches"):
-		if node is WorkbenchStation:
-			register_workbench(node as WorkbenchStation)
+		if node is BaseStation:
+			register_workbench(node as BaseStation)
 	if _monitored_workbenches.is_empty():
 		var root_node: Node = get_parent() if get_parent() else tree.current_scene
 		if root_node:
-			var found = root_node.find_children("*", "WorkbenchStation", true, false)
+			var found = root_node.find_children("*", "BaseStation", true, false)
 			for child in found:
-				if child is WorkbenchStation:
-					register_workbench(child as WorkbenchStation)
+				if child is RepairTableStation or child is WorkbenchStation:
+					register_workbench(child as BaseStation)
 
 
-func _on_device_placed(device: Carriable, station: WorkbenchStation) -> void:
+func _on_device_placed(device: Carriable, station: BaseStation) -> void:
 	if device is Device:
 		var dev := device as Device
 		if dev.current_repair_state in [
@@ -124,7 +127,7 @@ func _on_device_placed(device: Carriable, station: WorkbenchStation) -> void:
 			}
 
 
-func _on_device_removed(device: Carriable, _station: WorkbenchStation) -> void:
+func _on_device_removed(device: Carriable, _station: BaseStation) -> void:
 	if device:
 		var dev_id := device.get_instance_id()
 		if _device_timers.has(dev_id):

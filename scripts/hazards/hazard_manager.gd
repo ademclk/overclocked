@@ -143,6 +143,11 @@ func _pick_hazard_type() -> String:
 	return options[randi() % options.size()]
 
 
+## Spawns a floor spill or screws hazard at a specific world position
+func spawn_floor_hazard_at(pos: Vector3) -> BaseHazard:
+	return _spawn_floor_hazard(pos)
+
+
 func _spawn_floor_hazard(target_pos: Variant = null) -> BaseHazard:
 	if not floor_hazard_scene:
 		return null
@@ -275,7 +280,7 @@ func _discover_targets() -> void:
 			for node in parent_node.find_children("*", "", true, false):
 				if node is BaseStation and not node.is_queued_for_deletion():
 					var st := node as BaseStation
-					if st is ReceptionDesk or st is DeliveryCounter:
+					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "repair_table" or st.station_type == "trash":
 						continue
 					if not surge_target_stations.has(st):
 						surge_target_stations.append(st)
@@ -284,7 +289,7 @@ func _discover_targets() -> void:
 			for node in tree.get_nodes_in_group("stations"):
 				if node is BaseStation and not node.is_queued_for_deletion():
 					var st := node as BaseStation
-					if st is ReceptionDesk or st is DeliveryCounter:
+					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "repair_table" or st.station_type == "trash":
 						continue
 					if not surge_target_stations.has(st):
 						surge_target_stations.append(st)

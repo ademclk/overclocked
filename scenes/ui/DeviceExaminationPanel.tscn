@@ -74,6 +74,7 @@ theme_override_constants/separation = 12
 
 [node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+mouse_filter = 0
 theme_override_constants/separation = 14
 
 [node name="DeviceTitle" type="Label" parent="MarginContainer/VBoxContainer/Header"]
@@ -291,6 +292,7 @@ text = "[Space] Pick Up Device"
 
 [node name="PromptLegend" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+mouse_filter = 0
 theme_override_constants/separation = 20
 alignment = 1
 

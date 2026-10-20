@@ -21,8 +21,8 @@ var _current_station: BaseStation = null
 
 # 3D Inspection interaction state
 var _is_dragging: bool = false
-var _target_rotation: Vector3 = Vector3(-0.25, 0.45, 0.0)
-var _current_rotation: Vector3 = Vector3(-0.25, 0.45, 0.0)
+var _target_rotation: Vector3 = Vector3(0.35, -0.45, 0.0)
+var _current_rotation: Vector3 = Vector3(0.35, -0.45, 0.0)
 var _target_cam_dist: float = 0.95
 var _current_cam_dist: float = 0.95
 var _auto_rotate: bool = false
@@ -64,6 +64,8 @@ func _ready() -> void:
 		primary_action_btn.pressed.connect(_on_primary_action_pressed)
 	if pick_up_btn:
 		pick_up_btn.pressed.connect(_trigger_pick_up)
+	if viewport_panel:
+		viewport_panel.gui_input.connect(_on_viewport_input)
 
 
 func is_open() -> bool:
@@ -80,7 +82,7 @@ func open_panel(player: PlayerCharacter, device: Device, station: BaseStation = 
 	_current_device = device
 	_current_station = station
 
-	# If station was not passed, discover station from hierarchy
+	# If station was not passed, discover station from hierarchy or player focus
 	if not _current_station and device:
 		var p := device.get_parent()
 		while p != null:
@@ -88,6 +90,11 @@ func open_panel(player: PlayerCharacter, device: Device, station: BaseStation = 
 				_current_station = p as BaseStation
 				break
 			p = p.get_parent()
+
+	if not _current_station and player and player.interaction_system:
+		var focus: Interactable = player.interaction_system.get_current_focus() if player.interaction_system.has_method("get_current_focus") else null
+		if focus and focus.get_parent() is BaseStation:
+			_current_station = focus.get_parent() as BaseStation
 
 	_is_open = true
 
@@ -107,6 +114,7 @@ func close_panel() -> void:
 		return
 
 	_is_open = false
+	_is_dragging = false
 	visible = false
 
 	if _owning_player and is_instance_valid(_owning_player):
@@ -179,8 +187,8 @@ func _setup_3d_preview(device: Device) -> void:
 		_preview_mesh.scale = Vector3.ONE * scale_factor
 		model_root.add_child(_preview_mesh)
 
-	# Reset orientation & zoom to classic RE angled view
-	_target_rotation = Vector3(-0.25, 0.45, 0.0)
+	# Reset orientation & zoom to top-angled view showing face of device
+	_target_rotation = Vector3(0.35, -0.45, 0.0)
 	_current_rotation = _target_rotation
 	_target_cam_dist = 0.95
 	_current_cam_dist = 0.95
@@ -306,15 +314,16 @@ func _build_hotspots() -> void:
 
 	match state:
 		"RECEIVED":
-			# Diagnostic Bench Hotspot
-			var scan_hs = HotspotScript.new(
-				"diagnose",
-				"Run Hardware Diagnostics",
-				Vector3(0.0, 0.03, 0.0),
-				Callable(self, "_trigger_diagnosis")
-			)
-			scan_hs.glyph = "🔍"
-			_add_hotspot(scan_hs, true)
+			# Only allow hardware diagnostics if at diagnostic bench or inspecting freely
+			if station_type == "diagnostic" or station_type == "":
+				var scan_hs = HotspotScript.new(
+					"diagnose",
+					"Run Hardware Diagnostics",
+					Vector3(0.0, 0.03, 0.0),
+					Callable(self, "_trigger_diagnosis")
+				)
+				scan_hs.glyph = "🔍"
+				_add_hotspot(scan_hs, true)
 
 		"DIAGNOSED":
 			# Defect indicator highlight
@@ -328,95 +337,99 @@ func _build_hotspots() -> void:
 				defect_hs.is_defect_highlight = true
 				_add_hotspot(defect_hs, false)
 
-			# Disassembly screw hotspots at 4 corners
-			var screw_coords: Array[Vector3] = [
-				Vector3(-0.09, 0.02, -0.12),
-				Vector3(0.09, 0.02, -0.12),
-				Vector3(-0.09, 0.02, 0.12),
-				Vector3(0.09, 0.02, 0.12)
-			]
-			if dev_name.contains("laptop"):
-				screw_coords = [
-					Vector3(-0.16, 0.02, -0.10),
-					Vector3(0.16, 0.02, -0.10),
-					Vector3(-0.16, 0.02, 0.10),
-					Vector3(0.16, 0.02, 0.10)
+			# Disassembly screw hotspots: ONLY on Repair Table (or inspecting freely)
+			if station_type == "repair_table" or station_type == "":
+				var screw_coords: Array[Vector3] = [
+					Vector3(-0.09, 0.02, -0.12),
+					Vector3(0.09, 0.02, -0.12),
+					Vector3(-0.09, 0.02, 0.12),
+					Vector3(0.09, 0.02, 0.12)
 				]
-			elif dev_name.contains("desktop"):
-				screw_coords = [
-					Vector3(0.11, 0.15, -0.15),
-					Vector3(0.11, 0.15, 0.15),
-					Vector3(0.11, -0.15, -0.15),
-					Vector3(0.11, -0.15, 0.15)
-				]
+				if dev_name.contains("laptop"):
+					screw_coords = [
+						Vector3(-0.16, 0.02, -0.10),
+						Vector3(0.16, 0.02, -0.10),
+						Vector3(-0.16, 0.02, 0.10),
+						Vector3(0.16, 0.02, 0.10)
+					]
+				elif dev_name.contains("desktop"):
+					screw_coords = [
+						Vector3(0.11, 0.15, -0.15),
+						Vector3(0.11, 0.15, 0.15),
+						Vector3(0.11, -0.15, -0.15),
+						Vector3(0.11, -0.15, 0.15)
+					]
 
-			var has_tool: bool = _check_tool_available()
-			for i in range(screw_coords.size()):
-				var pos := screw_coords[i]
+				var has_tool: bool = _check_tool_available()
+				for i in range(screw_coords.size()):
+					var pos := screw_coords[i]
+					var hs = HotspotScript.new(
+						"unscrew_%d" % i,
+						"Unscrew Casing" if i == 0 else "",
+						pos,
+						Callable(self, "_trigger_disassembly")
+					)
+					hs.glyph = "🔧"
+					hs.is_enabled = has_tool
+					hs.disabled_reason = "Needs Screwdriver" if not has_tool else ""
+					_add_hotspot(hs, i == 0)
+
+		"DISASSEMBLED":
+			# Component slots for missing replacement parts: ONLY on Repair Table (or inspecting freely)
+			if station_type == "repair_table" or station_type == "":
+				var missing: Array[ComponentData] = _current_device.get_missing_components()
+				var carried_part: Carriable = _get_carried_part()
+
+				if not missing.is_empty():
+					for i in range(missing.size()):
+						var comp := missing[i]
+						if not comp:
+							continue
+						var slot_pos := _get_component_slot_pos(comp.component_id, i)
+						var can_install: bool = false
+						if carried_part != null:
+							if _current_station and _current_station.has_method("_is_valid_replacement_part"):
+								can_install = _current_station._is_valid_replacement_part(_current_device, carried_part)
+							else:
+								can_install = carried_part.item_name.to_lower().contains(comp.component_name.to_lower())
+
+						var hs = HotspotScript.new(
+							"install_%s" % comp.component_id,
+							"Install %s" % comp.component_name,
+							slot_pos,
+							Callable(self, "_trigger_install_part").bind(comp)
+						)
+						hs.glyph = "📦"
+						hs.is_enabled = can_install
+						hs.disabled_reason = "Carrying %s" % carried_part.item_name if (carried_part and not can_install) else "Need part from shelf"
+						_add_hotspot(hs, i == 0)
+
+		"PART_REPLACED":
+			# Reassembly screw hotspots: ONLY on Repair Table (or inspecting freely)
+			if station_type == "repair_table" or station_type == "":
+				var has_tool: bool = _check_tool_available()
 				var hs = HotspotScript.new(
-					"unscrew_%d" % i,
-					"Unscrew Casing" if i == 0 else "",
-					pos,
-					Callable(self, "_trigger_disassembly")
+					"reassemble",
+					"Fasten & Reassemble",
+					Vector3(0.0, 0.03, 0.0),
+					Callable(self, "_trigger_reassembly")
 				)
 				hs.glyph = "🔧"
 				hs.is_enabled = has_tool
 				hs.disabled_reason = "Needs Screwdriver" if not has_tool else ""
-				_add_hotspot(hs, i == 0)
-
-		"DISASSEMBLED":
-			# Component slots for missing replacement parts
-			var missing: Array[ComponentData] = _current_device.get_missing_components()
-			var carried_part: Carriable = _get_carried_part()
-
-			if not missing.is_empty():
-				for i in range(missing.size()):
-					var comp := missing[i]
-					if not comp:
-						continue
-					var slot_pos := _get_component_slot_pos(comp.component_id, i)
-					var can_install: bool = false
-					if carried_part != null:
-						if _current_station and _current_station.has_method("_is_valid_replacement_part"):
-							can_install = _current_station._is_valid_replacement_part(_current_device, carried_part)
-						else:
-							can_install = carried_part.item_name.to_lower().contains(comp.component_name.to_lower())
-
-					var hs = HotspotScript.new(
-						"install_%s" % comp.component_id,
-						"Install %s" % comp.component_name,
-						slot_pos,
-						Callable(self, "_trigger_install_part").bind(comp)
-					)
-					hs.glyph = "📦"
-					hs.is_enabled = can_install
-					hs.disabled_reason = "Carrying %s" % carried_part.item_name if (carried_part and not can_install) else "Need part from shelf"
-					_add_hotspot(hs, i == 0)
-
-		"PART_REPLACED":
-			# Reassembly screw hotspots
-			var has_tool: bool = _check_tool_available()
-			var hs = HotspotScript.new(
-				"reassemble",
-				"Fasten & Reassemble",
-				Vector3(0.0, 0.03, 0.0),
-				Callable(self, "_trigger_reassembly")
-			)
-			hs.glyph = "🔧"
-			hs.is_enabled = has_tool
-			hs.disabled_reason = "Needs Screwdriver" if not has_tool else ""
-			_add_hotspot(hs, true)
+				_add_hotspot(hs, true)
 
 		"REASSEMBLED":
-			# Software Station Flash OS Hotspot
-			var hs = HotspotScript.new(
-				"flash_os",
-				"Plug USB & Flash OS",
-				Vector3(0.0, 0.02, 0.12),
-				Callable(self, "_trigger_software_flash")
-			)
-			hs.glyph = "💻"
-			_add_hotspot(hs, true)
+			# Software Station Flash OS Hotspot: ONLY on Software Station (or inspecting freely)
+			if station_type == "software" or station_type == "software_station" or station_type == "":
+				var hs = HotspotScript.new(
+					"flash_os",
+					"Plug USB & Flash OS",
+					Vector3(0.0, 0.02, 0.12),
+					Callable(self, "_trigger_software_flash")
+				)
+				hs.glyph = "💻"
+				_add_hotspot(hs, true)
 
 		"TESTED":
 			# Tested / Ready Hotspot
@@ -466,8 +479,8 @@ func _get_component_slot_pos(comp_id: String, index: int) -> Vector3:
 
 
 func _check_tool_available() -> bool:
-	if _current_station and _current_station is WorkbenchStation:
-		return (_current_station as WorkbenchStation)._has_required_tool(_owning_player)
+	if _current_station and _current_station.has_method("_has_required_tool"):
+		return _current_station._has_required_tool(_owning_player)
 	if _owning_player and _owning_player.carry_system and _owning_player.carry_system.is_carrying():
 		var held: Carriable = _owning_player.carry_system.get_held_item()
 		if held is ToolItem and (held as ToolItem).tool_id == "screwdriver":
@@ -512,14 +525,15 @@ func _trigger_disassembly() -> void:
 			tool_status_label.modulate = Color(1.0, 0.35, 0.3)
 		return
 
-	# Decrement tool durability if using workbench tool or carried tool
+	# Decrement tool durability if using bench tool or carried tool
 	_consume_tool_use()
 
-	if _current_station and _current_station is WorkbenchStation:
-		var wb := _current_station as WorkbenchStation
-		wb.set_active_user(_owning_player)
-		wb._start_disassembly()
-		wb._complete_processing()
+	if _current_station and _current_station.has_method("_start_disassembly"):
+		if _current_station.has_method("set_active_user"):
+			_current_station.set_active_user(_owning_player)
+		_current_station._start_disassembly()
+		if _current_station.has_method("_complete_processing"):
+			_current_station._complete_processing()
 	else:
 		_current_device.advance_repair_state()
 
@@ -535,14 +549,45 @@ func _trigger_install_part(comp: ComponentData) -> void:
 	if not carried:
 		return
 
-	if _current_station and _current_station is WorkbenchStation:
-		var wb := _current_station as WorkbenchStation
-		wb._try_install_part(_owning_player)
+	var comp_to_install: ComponentData = comp
+	if not comp_to_install and carried.has_meta("component_data"):
+		comp_to_install = carried.get_meta("component_data") as ComponentData
+
+	if _current_station and _current_station.has_method("_try_install_part") and _current_station.placed_device == _current_device:
+		if comp_to_install and not carried.has_meta("component_data"):
+			carried.set_meta("component_data", comp_to_install)
+		var success: bool = _current_station._try_install_part(_owning_player)
+		if not success:
+			return
 	else:
-		_current_device.install_component(comp)
-		if _owning_player and _owning_player.carry_system:
-			_owning_player.carry_system.drop_item()
+		var installed := false
+		if comp_to_install:
+			installed = _current_device.try_install_component(comp_to_install)
+
+		if not installed:
+			# Fallback: check if carried item matches any missing component by name
+			var missing := _current_device.get_missing_components()
+			for m in missing:
+				if m and (carried.item_name.to_lower().contains(m.component_name.to_lower()) or m.component_name.to_lower().contains(carried.item_name.to_lower())):
+					installed = _current_device.try_install_component(m)
+					if installed:
+						break
+
+		if not installed and not _current_device.assigned_fault:
+			# Unassigned fault fallback (e.g. test dummies)
+			installed = true
+
+		if installed:
+			if _owning_player and _owning_player.carry_system:
+				_owning_player.carry_system.drop_item()
 			carried.queue_free()
+			_current_device.install_part()
+		else:
+			SignalBus.hazard_activated.emit("Wrong Part", "wrong_part")
+			if tool_status_label:
+				tool_status_label.text = "⚠️ Wrong part for this device!"
+				tool_status_label.modulate = Color(1.0, 0.35, 0.3)
+			return
 
 	action_performed.emit("install_part")
 	_refresh_all()
@@ -556,10 +601,14 @@ func _trigger_reassembly() -> void:
 
 	_consume_tool_use()
 
-	if _current_station and _current_station is WorkbenchStation:
-		var wb := _current_station as WorkbenchStation
-		wb._try_reassemble(_owning_player)
-		wb._complete_processing()
+	if _current_station and _current_station.has_method("_start_reassembly"):
+		_current_station._start_reassembly()
+		if _current_station.has_method("_complete_processing"):
+			_current_station._complete_processing()
+	elif _current_station and _current_station.has_method("_try_reassemble"):
+		_current_station._try_reassemble(_owning_player)
+		if _current_station.has_method("_complete_processing"):
+			_current_station._complete_processing()
 	else:
 		_current_device.advance_repair_state()
 
@@ -610,8 +659,8 @@ func _consume_tool_use() -> void:
 		if held is ToolItem:
 			(held as ToolItem).use_tool()
 			return
-	if _current_station and _current_station is WorkbenchStation:
-		var t: ToolItem = (_current_station as WorkbenchStation).get_bench_tool()
+	if _current_station and _current_station.has_method("get_bench_tool"):
+		var t: ToolItem = _current_station.get_bench_tool()
 		if t:
 			t.use_tool()
 
@@ -798,18 +847,18 @@ static func get_next_step_hint(device: Device) -> String:
 		"DIAGNOSED":
 			if device.assigned_fault and device.assigned_fault.skip_states.has("DISASSEMBLED"):
 				return "This device needs software only. Take it to the Software Station."
-			return "Take this device to a Workbench and disassemble it with a screwdriver."
+			return "Take this device to a Repair Table and disassemble it with a screwdriver."
 		"DISASSEMBLED":
 			var missing := device.get_missing_components()
 			if missing.is_empty():
-				return "All parts installed. Reassemble the device at the Workbench."
+				return "All parts installed. Reassemble the device at the Repair Table."
 			var names: PackedStringArray = []
 			for m in missing:
 				if m:
 					names.append(m.component_name)
 			return "Get these parts from the Parts Shelf: %s" % ", ".join(names)
 		"PART_REPLACED":
-			return "Reassemble the device at the Workbench (needs screwdriver)."
+			return "Reassemble the device at the Repair Table (needs screwdriver)."
 		"REASSEMBLED":
 			return "Take to the Software Station to reinstall OS and run diagnostic tests."
 		"TESTED":
@@ -823,7 +872,7 @@ static func get_next_step_hint(device: Device) -> String:
 # INPUT CONTROLS
 # =========================================================================
 
-func _gui_input(event: InputEvent) -> void:
+func _on_viewport_input(event: InputEvent) -> void:
 	if not _is_open:
 		return
 
@@ -833,19 +882,35 @@ func _gui_input(event: InputEvent) -> void:
 			_is_dragging = mb.pressed
 			if _is_dragging:
 				_auto_rotate = false
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_target_cam_dist = clampf(_target_cam_dist - 0.08, 0.45, 1.8)
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			_target_cam_dist = clampf(_target_cam_dist + 0.08, 0.45, 1.8)
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 
 	elif event is InputEventMouseMotion and _is_dragging:
 		var mm := event as InputEventMouseMotion
 		_target_rotation.y += mm.relative.x * 0.012
 		_target_rotation.x = clampf(_target_rotation.x + mm.relative.y * 0.012, -PI * 0.45, PI * 0.45)
-		accept_event()
+		if viewport_panel:
+			viewport_panel.accept_event()
+		else:
+			accept_event()
+
+
+func _gui_input(_event: InputEvent) -> void:
+	pass
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -870,9 +935,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R:
 		# Reset 3D view
-		_target_rotation = Vector3(-0.25, 0.45, 0.0)
+		_target_rotation = Vector3(0.35, -0.45, 0.0)
 		_target_cam_dist = 0.95
 		_auto_rotate = false
 		get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton or event is InputEventMouseMotion:
-		_gui_input(event)
+	elif event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and not mb.pressed:
+			_is_dragging = false

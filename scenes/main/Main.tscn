@@ -1,29 +1,29 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://37xacnhg7i0n"]
 
-[ext_resource type="Script" path="res://scripts/core/main.gd" id="1_w8n1l"]
-[ext_resource type="Environment" path="res://resources/default_env.tres" id="2_hptm8"]
+[ext_resource type="Script" uid="uid://g1d71fcjxcuf" path="res://scripts/core/main.gd" id="1_w8n1l"]
+[ext_resource type="Environment" uid="uid://eirmwjddobp2" path="res://resources/default_env.tres" id="2_hptm8"]
 [ext_resource type="PackedScene" path="res://scenes/main/CameraRig.tscn" id="3_v8ekm"]
 [ext_resource type="PackedScene" path="res://scenes/workshop/Workshop_Debug.tscn" id="4_n4mpe"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="5_hud"]
 
-[node name="Main" type="Node3D"]
+[node name="Main" type="Node3D" unique_id=1768619119]
 script = ExtResource("1_w8n1l")
-default_level = ExtResource("4_n4mpe")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1020127299]
 environment = ExtResource("2_hptm8")
 
-[node name="CameraRig" parent="." instance=ExtResource("3_v8ekm")]
+[node name="CameraRig" parent="." unique_id=1955349663 instance=ExtResource("3_v8ekm")]
 
-[node name="Workshop" parent="." instance=ExtResource("4_n4mpe")]
+[node name="Workshop" parent="." unique_id=162648362 instance=ExtResource("4_n4mpe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.057566166, -0.03167057, 0.030293941)
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1866551873]
 
-[node name="DebugLabel" type="Label" parent="UI"]
+[node name="DebugLabel" type="Label" parent="UI" unique_id=1011984151]
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 500.0
 offset_bottom = 60.0
 text = "OVERclocked — Workshop Repair"
 
-[node name="HUD" parent="UI" instance=ExtResource("5_hud")]
+[node name="HUD" parent="UI" unique_id=1531966353 instance=ExtResource("5_hud")]

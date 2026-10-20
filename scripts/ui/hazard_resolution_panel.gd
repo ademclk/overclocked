@@ -49,6 +49,7 @@ var _step_labels: Array[Label] = []
 @onready var cancel_btn: Button = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox/CancelButton") as Button
 
 # 3D Viewport References
+@onready var viewport_panel: PanelContainer = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel") as PanelContainer
 @onready var model_root: Node3D = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport/HazardModelRoot") as Node3D
 @onready var inspection_camera: Camera3D = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport/Camera3D") as Camera3D
 @onready var hotspot_overlay: Control = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/HotspotOverlay") as Control
@@ -56,10 +57,10 @@ var _step_labels: Array[Label] = []
 
 func _ready() -> void:
 	visible = false
-	if primary_action_btn:
-		primary_action_btn.pressed.connect(_on_primary_action_pressed)
 	if cancel_btn:
 		cancel_btn.pressed.connect(close_panel)
+	if viewport_panel:
+		viewport_panel.gui_input.connect(_on_viewport_input)
 
 
 func is_open() -> bool:
@@ -86,6 +87,7 @@ func open_hazard_panel(player: PlayerCharacter, hazard: BaseHazard) -> void:
 	_setup_hazard_minigame()
 	_update_header()
 	_update_progress()
+	_update_action_button()
 
 	panel_opened.emit()
 
@@ -95,6 +97,7 @@ func close_panel() -> void:
 		return
 
 	_is_open = false
+	_is_dragging = false
 	visible = false
 
 	if _owning_player and is_instance_valid(_owning_player):
@@ -782,9 +785,9 @@ func _update_header() -> void:
 
 	if task_desc:
 		if is_screws:
-			task_desc.text = "Gather all loose screws, nuts, and washers from the floor into your toolbox with [E] or Left Click."
+			task_desc.text = "Click the glowing hotspots directly in the 3D puzzle view to gather all loose screws into your toolbox."
 		elif _current_hazard is FloorSpillHazard:
-			task_desc.text = "Mop up all spilled coffee puddle spots with [E] or Left Click before someone slips!"
+			task_desc.text = "Click each dirty puddle hotspot directly in the 3D puzzle view to mop it clean before someone slips!"
 		elif _current_hazard is CableTangleHazard:
 			task_desc.text = "Untangle cords and rewire each color-coded cable into its matching terminal port."
 		elif _current_hazard is PowerSurgeHazard:
@@ -809,14 +812,14 @@ func _update_action_button() -> void:
 	if not primary_action_btn:
 		return
 
-	if _primary_hotspot and is_instance_valid(_primary_hotspot) and _primary_hotspot.is_enabled:
-		primary_action_btn.visible = true
-		primary_action_btn.disabled = false
-		primary_action_btn.text = "[E] %s" % _primary_hotspot.action_label.to_upper()
-	elif _cleared_steps >= _total_steps:
+	if _cleared_steps >= _total_steps:
 		primary_action_btn.visible = true
 		primary_action_btn.disabled = true
 		primary_action_btn.text = "✓ COMPLETE"
+	elif _primary_hotspot and is_instance_valid(_primary_hotspot) and _primary_hotspot.is_enabled:
+		primary_action_btn.visible = true
+		primary_action_btn.disabled = true
+		primary_action_btn.text = "CLICK 3D HOTSPOT TO RESOLVE"
 	else:
 		primary_action_btn.visible = false
 
@@ -830,7 +833,7 @@ func _on_primary_action_pressed() -> void:
 # INPUT HANDLING
 # =========================================================================
 
-func _gui_input(event: InputEvent) -> void:
+func _on_viewport_input(event: InputEvent) -> void:
 	if not _is_open:
 		return
 
@@ -838,19 +841,39 @@ func _gui_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_LEFT:
 			_is_dragging = mb.pressed
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_target_cam_dist = clampf(_target_cam_dist - 0.08, 0.5, 2.0)
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			_target_cam_dist = clampf(_target_cam_dist + 0.08, 0.5, 2.0)
-			accept_event()
+			if viewport_panel:
+				viewport_panel.accept_event()
+			else:
+				accept_event()
 
 	elif event is InputEventMouseMotion and _is_dragging:
 		var mm := event as InputEventMouseMotion
 		_target_rotation.y += mm.relative.x * 0.012
 		_target_rotation.x = clampf(_target_rotation.x + mm.relative.y * 0.012, -PI * 0.45, PI * 0.45)
-		accept_event()
+		if viewport_panel:
+			viewport_panel.accept_event()
+		else:
+			accept_event()
+
+
+func _gui_input(event: InputEvent) -> void:
+	if not _is_open:
+		return
+	if event is InputEventMouse:
+		if _is_dragging or (viewport_panel and viewport_panel.get_global_rect().has_point(event.global_position)):
+			_on_viewport_input(event)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -867,8 +890,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		close_panel()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed(interact) or (player_idx == 0 and event is InputEventKey and event.pressed and (event.keycode == KEY_E or event.keycode == KEY_ENTER)):
-		_on_primary_action_pressed()
-		get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton or event is InputEventMouseMotion:
-		_gui_input(event)
+	elif event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and not mb.pressed:
+			_is_dragging = false
+

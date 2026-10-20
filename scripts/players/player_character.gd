@@ -10,6 +10,8 @@ signal footstep(player_index: int)
 signal player_bumped(other_player: PlayerCharacter)
 signal stunned(duration: float)
 signal recovered
+signal dashed()
+signal dash_impact()
 
 enum MovementState {
 	IDLE,
@@ -22,9 +24,21 @@ const FOOTSTEP_INTERVAL_DISTANCE: float = 1.2
 @export var rotation_speed: float = 10.0
 @export var player_index: int = 0
 
+@export_group("Dash / Rush")
+@export var dash_speed_multiplier: float = 2.5
+@export var dash_duration: float = 0.18
+@export var dash_cooldown: float = 0.8
+
 var current_movement_state: MovementState = MovementState.IDLE
 var _input_direction: Vector3 = Vector3.ZERO
 var _distance_since_last_footstep: float = 0.0
+
+# Dash state
+var _is_dashing: bool = false
+var _dash_timer: float = 0.0
+var _dash_cooldown_timer: float = 0.0
+var _dash_direction: Vector3 = Vector3.ZERO
+var _shift_was_pressed: bool = false
 
 # Bump mechanic & stun state
 var _is_stunned: bool = false
@@ -77,20 +91,95 @@ func is_movement_locked() -> bool:
 	return _movement_locked
 
 
+func is_dashing() -> bool:
+	return _is_dashing
+
+
+func trigger_dash() -> void:
+	if _movement_locked or _is_stunned or _is_dashing or _dash_cooldown_timer > 0.0:
+		return
+	_is_dashing = true
+	_dash_timer = dash_duration
+	_dash_cooldown_timer = dash_cooldown
+
+	var dir: Vector3 = _input_direction
+	if dir.length_squared() < 0.01 and character_model:
+		dir = Vector3(sin(character_model.rotation.y), 0.0, cos(character_model.rotation.y))
+	if dir.length_squared() < 0.01:
+		dir = Vector3(0.0, 0.0, 1.0)
+	dir.y = 0.0
+	_dash_direction = dir.normalized()
+	dashed.emit()
+
+
 func _physics_process(delta: float) -> void:
 	_bump_cooldown_timer = maxf(0.0, _bump_cooldown_timer - delta)
+	_dash_cooldown_timer = maxf(0.0, _dash_cooldown_timer - delta)
 
 	if _movement_locked:
+		_is_dashing = false
 		velocity = Vector3.ZERO
 		move_and_slide()
 		return
 
 	if _is_stunned:
+		_is_dashing = false
 		_stun_timer -= delta
 		if _stun_timer <= 0.0:
 			_end_stun()
 		velocity = Vector3.ZERO
 		move_and_slide()
+		return
+
+	# Dash Trigger (Shift or action rush)
+	var rush_action := MultiplayerInput.action_name(player_index, &"rush")
+	var shift_just_pressed: bool = false
+	if player_index == 0:
+		var shift_down: bool = Input.is_physical_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_SHIFT)
+		if shift_down and not _shift_was_pressed:
+			shift_just_pressed = true
+		_shift_was_pressed = shift_down
+	var is_rush_just_pressed: bool = (
+		(InputMap.has_action(rush_action) and Input.is_action_just_pressed(rush_action))
+		or (InputMap.has_action(&"rush") and Input.is_action_just_pressed(&"rush"))
+		or shift_just_pressed
+	)
+	if is_rush_just_pressed and not _is_dashing and _dash_cooldown_timer <= 0.0:
+		trigger_dash()
+
+	if _is_dashing:
+		_dash_timer -= delta
+		velocity = _dash_direction * (move_speed * dash_speed_multiplier)
+		_last_motion_speed = velocity.length()
+		move_and_slide()
+
+		# Check for wall / station / obstacle impact
+		var impact: bool = false
+		var col_count: int = get_slide_collision_count()
+		for i in range(col_count):
+			var col := get_slide_collision(i)
+			var collider := col.get_collider()
+			if collider and collider != self:
+				impact = true
+				break
+
+		if impact:
+			_is_dashing = false
+			_dash_timer = 0.0
+			dash_impact.emit()
+			if carry_system and carry_system.is_carrying():
+				var held: Carriable = carry_system.get_held_item()
+				carry_system.drop_item()
+				if held and is_instance_valid(held):
+					held.global_position += _dash_direction * 0.6
+			stun(0.35)
+			return
+
+		if _dash_timer <= 0.0:
+			_is_dashing = false
+
+		_rotate_toward_direction(delta)
+		_update_movement_state(delta)
 		return
 
 	_input_direction = MultiplayerInput.get_movement_vector_3d(player_index)

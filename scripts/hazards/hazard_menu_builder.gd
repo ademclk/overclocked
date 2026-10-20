@@ -100,21 +100,6 @@ static func _build_spill_menu(spill: FloorSpillHazard, player: PlayerCharacter) 
 	)
 	options.append(mop_opt)
 
-	var wipe_opt := InteractionMenuOption.new(
-		"quick_wipe",
-		"Quick Wipe (Risky)",
-		"Quickly wipe up (1s), but 40% chance to spread the spill!",
-		func() -> void:
-			SignalBus.hazard_resolution_started.emit(spill.hazard_name, "quick_wipe")
-			if randf() < 0.40:
-				spill.spill_radius *= 1.3
-				SignalBus.hazard_wrong_choice.emit(spill.hazard_name, "quick_wipe")
-			spill.clear_time = 1.0
-			spill._on_clear_interacted(player),
-		true
-	)
-	options.append(wipe_opt)
-
 	var caution_opt := InteractionMenuOption.new(
 		"caution_sign",
 		"Put Down Caution Sign",
@@ -264,22 +249,6 @@ static func _build_screws_menu(screws: BaseHazard, player: PlayerCharacter) -> A
 		true
 	)
 	options.append(gather_opt)
-
-	var sweep_opt := InteractionMenuOption.new(
-		"quick_sweep",
-		"Quick Sweep (Risky)",
-		"Quickly sweep screws aside (1s), but 35% chance to kick screws further!",
-		func() -> void:
-			SignalBus.hazard_resolution_started.emit(screws.hazard_name, "quick_sweep")
-			if randf() < 0.35:
-				if screws is FloorSpillHazard:
-					(screws as FloorSpillHazard).spill_radius *= 1.3
-				SignalBus.hazard_wrong_choice.emit(screws.hazard_name, "quick_sweep")
-			screws.clear_time = 1.0
-			screws._on_clear_interacted(player),
-		true
-	)
-	options.append(sweep_opt)
 
 	var caution_opt := InteractionMenuOption.new(
 		"caution_sign",

@@ -47,8 +47,11 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 	if placed_device:
 		var is_tested: bool = (current_state == StationState.COMPLETE) or (placed_device.has_method("get_repair_state") and str(placed_device.get_repair_state()) == "TESTED")
 		if is_tested:
-			if player and player.carry_system and player.carry_system.can_pick_up():
-				return "Pick Up Tested Device"
+			if player and player.carry_system:
+				if player.carry_system.can_pick_up():
+					return "Pick Up Tested Device"
+				elif player.carry_system.is_carrying() and player.carry_system.get_held_item() is ToolItem:
+					return "Pick Up Tested Device (Drop Tool)"
 			return "Tested (Hands Full)"
 		return "Inspect & Flash OS"
 
@@ -76,10 +79,13 @@ func _on_interacted(player: PlayerCharacter) -> void:
 			else:
 				current_state = StationState.OCCUPIED
 				_update_visual_state()
-	elif placed_device and is_tested and player.carry_system.can_pick_up():
-		var dev = remove_device()
-		if dev:
-			player.carry_system.pick_up(dev)
+	elif placed_device and is_tested:
+		if player.carry_system.is_carrying() and player.carry_system.get_held_item() is ToolItem:
+			player.carry_system.drop_item()
+		if player.carry_system.can_pick_up():
+			var dev = remove_device()
+			if dev:
+				player.carry_system.pick_up(dev)
 	elif placed_device:
 		open_examination_workstation(player)
 
