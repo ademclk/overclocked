@@ -21,10 +21,10 @@ var _current_station: BaseStation = null
 
 # 3D Inspection interaction state
 var _is_dragging: bool = false
-var _target_rotation: Vector3 = Vector3(0.35, -0.45, 0.0)
-var _current_rotation: Vector3 = Vector3(0.35, -0.45, 0.0)
-var _target_cam_dist: float = 0.95
-var _current_cam_dist: float = 0.95
+var _target_rotation: Vector3 = Vector3(0.35, -0.85, 0.0)
+var _current_rotation: Vector3 = Vector3(0.35, -0.85, 0.0)
+var _target_cam_dist: float = 1.25
+var _current_cam_dist: float = 1.25
 var _auto_rotate: bool = false
 
 # 3D Model Tracking & Hotspots
@@ -32,8 +32,10 @@ var _preview_mesh: Node3D = null
 var _active_hotspots: Array = []
 var _primary_hotspot = null
 var _is_scanning: bool = false
+var _unscrewed_indices: Array[int] = []
 
 # UI Node References
+@onready var instruction_label: Label = get_node_or_null("MarginContainer/VBoxContainer/InstructionBanner/InstructionLabel") as Label
 @onready var device_title: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/DeviceTitle") as Label
 @onready var station_badge: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/StationBadge") as Label
 @onready var state_badge: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/StateBadge") as Label
@@ -97,6 +99,7 @@ func open_panel(player: PlayerCharacter, device: Device, station: BaseStation = 
 			_current_station = focus.get_parent() as BaseStation
 
 	_is_open = true
+	_unscrewed_indices.clear()
 
 	if _owning_player and is_instance_valid(_owning_player):
 		_owning_player.set_movement_locked(true)
@@ -131,6 +134,7 @@ func _refresh_all() -> void:
 	if not _current_device:
 		return
 	_populate_device_info()
+	_update_instruction_banner()
 	_build_roadmap()
 	_update_next_step()
 	_update_chassis_3d_state()
@@ -168,21 +172,21 @@ func _setup_3d_preview(device: Device) -> void:
 		_preview_mesh.position = Vector3.ZERO
 		_preview_mesh.rotation = Vector3.ZERO
 
-		# Scale factor per device type so each object fills the RE inspection viewport
+		# Scale factor per device type so each object fills the RE inspection viewport nicely
 		var dev_name: String = device.item_name.to_lower()
-		var scale_factor: float = 2.4
+		var scale_factor: float = 3.0
 		if dev_name.contains("phone"):
-			scale_factor = 2.8
+			scale_factor = 3.6
 		elif dev_name.contains("tablet"):
-			scale_factor = 2.2
+			scale_factor = 2.8
 		elif dev_name.contains("laptop"):
-			scale_factor = 1.6
+			scale_factor = 2.1
 		elif dev_name.contains("console"):
-			scale_factor = 1.5
+			scale_factor = 2.0
 		elif dev_name.contains("desktop"):
-			scale_factor = 0.8
+			scale_factor = 1.1
 		elif dev_name.contains("router"):
-			scale_factor = 1.8
+			scale_factor = 2.4
 
 		_preview_mesh.scale = Vector3.ONE * scale_factor
 		model_root.add_child(_preview_mesh)
@@ -190,8 +194,8 @@ func _setup_3d_preview(device: Device) -> void:
 	# Reset orientation & zoom to top-angled view showing face of device
 	_target_rotation = Vector3(0.35, -0.45, 0.0)
 	_current_rotation = _target_rotation
-	_target_cam_dist = 0.95
-	_current_cam_dist = 0.95
+	_target_cam_dist = 1.25
+	_current_cam_dist = 1.25
 	_auto_rotate = false
 
 
@@ -337,8 +341,8 @@ func _build_hotspots() -> void:
 				defect_hs.is_defect_highlight = true
 				_add_hotspot(defect_hs, false)
 
-			# Disassembly screw hotspots: ONLY on Repair Table (or inspecting freely)
-			if station_type == "repair_table" or station_type == "":
+			# Disassembly screw hotspots: ONLY on Workbench / Repair Table (or inspecting freely)
+			if station_type in ["workbench", "repair_table", ""]:
 				var screw_coords: Array[Vector3] = [
 					Vector3(-0.09, 0.02, -0.12),
 					Vector3(0.09, 0.02, -0.12),
@@ -359,24 +363,38 @@ func _build_hotspots() -> void:
 						Vector3(0.11, -0.15, -0.15),
 						Vector3(0.11, -0.15, 0.15)
 					]
+				elif dev_name.contains("tablet"):
+					screw_coords = [
+						Vector3(-0.12, 0.02, -0.14),
+						Vector3(0.12, 0.02, -0.14),
+						Vector3(-0.12, 0.02, 0.14),
+						Vector3(0.12, 0.02, 0.14)
+					]
+				elif dev_name.contains("router"):
+					screw_coords = [
+						Vector3(-0.12, 0.03, -0.10),
+						Vector3(0.12, 0.03, -0.10),
+						Vector3(-0.12, 0.03, 0.10),
+						Vector3(0.12, 0.03, 0.10)
+					]
 
-				var has_tool: bool = _check_tool_available()
 				for i in range(screw_coords.size()):
+					if _unscrewed_indices.has(i):
+						continue
 					var pos := screw_coords[i]
 					var hs = HotspotScript.new(
 						"unscrew_%d" % i,
-						"Unscrew Casing" if i == 0 else "",
+						"Sök (#%d)" % (i + 1),
 						pos,
-						Callable(self, "_trigger_disassembly")
+						Callable(self, "_on_screw_clicked").bind(i)
 					)
-					hs.glyph = "🔧"
-					hs.is_enabled = has_tool
-					hs.disabled_reason = "Needs Screwdriver" if not has_tool else ""
-					_add_hotspot(hs, i == 0)
+					hs.glyph = "🪛"
+					hs.is_enabled = true
+					_add_hotspot(hs, _unscrewed_indices.is_empty() and i == 0)
 
 		"DISASSEMBLED":
-			# Component slots for missing replacement parts: ONLY on Repair Table (or inspecting freely)
-			if station_type == "repair_table" or station_type == "":
+			# Component slots for missing replacement parts: ONLY on Workbench / Repair Table (or inspecting freely)
+			if station_type in ["workbench", "repair_table", ""]:
 				var missing: Array[ComponentData] = _current_device.get_missing_components()
 				var carried_part: Carriable = _get_carried_part()
 
@@ -405,18 +423,16 @@ func _build_hotspots() -> void:
 						_add_hotspot(hs, i == 0)
 
 		"PART_REPLACED":
-			# Reassembly screw hotspots: ONLY on Repair Table (or inspecting freely)
-			if station_type == "repair_table" or station_type == "":
-				var has_tool: bool = _check_tool_available()
+			# Reassembly screw hotspots: ONLY on Workbench / Repair Table (or inspecting freely)
+			if station_type in ["workbench", "repair_table", ""]:
 				var hs = HotspotScript.new(
 					"reassemble",
 					"Fasten & Reassemble",
 					Vector3(0.0, 0.03, 0.0),
 					Callable(self, "_trigger_reassembly")
 				)
-				hs.glyph = "🔧"
-				hs.is_enabled = has_tool
-				hs.disabled_reason = "Needs Screwdriver" if not has_tool else ""
+				hs.glyph = "🔩"
+				hs.is_enabled = true
 				_add_hotspot(hs, true)
 
 		"REASSEMBLED":
@@ -479,13 +495,20 @@ func _get_component_slot_pos(comp_id: String, index: int) -> Vector3:
 
 
 func _check_tool_available() -> bool:
-	if _current_station and _current_station.has_method("_has_required_tool"):
-		return _current_station._has_required_tool(_owning_player)
-	if _owning_player and _owning_player.carry_system and _owning_player.carry_system.is_carrying():
-		var held: Carriable = _owning_player.carry_system.get_held_item()
-		if held is ToolItem and (held as ToolItem).tool_id == "screwdriver":
-			return true
-	return false
+	return true
+
+
+func _on_screw_clicked(index: int) -> void:
+	if not _unscrewed_indices.has(index):
+		_unscrewed_indices.append(index)
+
+	_update_instruction_banner()
+
+	if _unscrewed_indices.size() >= 4:
+		_trigger_disassembly()
+		close_panel()
+	else:
+		_build_hotspots()
 
 
 func _get_carried_part() -> Carriable:
@@ -614,6 +637,7 @@ func _trigger_reassembly() -> void:
 
 	action_performed.emit("reassemble")
 	_refresh_all()
+	close_panel()
 
 
 func _trigger_software_flash() -> void:
@@ -634,6 +658,7 @@ func _trigger_software_flash() -> void:
 
 		action_performed.emit("flash_os")
 		_refresh_all()
+		close_panel()
 	, "⚡ INSTALLING OPERATING SYSTEM & DIAGNOSTICS...")
 
 
@@ -654,15 +679,71 @@ func _trigger_pick_up() -> void:
 
 
 func _consume_tool_use() -> void:
-	if _owning_player and _owning_player.carry_system and _owning_player.carry_system.is_carrying():
-		var held: Carriable = _owning_player.carry_system.get_held_item()
-		if held is ToolItem:
-			(held as ToolItem).use_tool()
-			return
-	if _current_station and _current_station.has_method("get_bench_tool"):
-		var t: ToolItem = _current_station.get_bench_tool()
-		if t:
-			t.use_tool()
+	pass
+
+
+func _update_instruction_banner() -> void:
+	if not instruction_label or not is_instance_valid(instruction_label):
+		return
+	if not _current_device:
+		instruction_label.text = "CİHAZ BULUNAMADI"
+		return
+
+	var state: String = str(_current_device.get_repair_state())
+	var station_type: String = _current_station.station_type if _current_station else ""
+	var fault_name: String = _current_device.assigned_fault.fault_name if _current_device.assigned_fault else "Arıza"
+
+	match state:
+		"RECEIVED":
+			if station_type == "diagnostic" or station_type == "":
+				instruction_label.text = "🔍 TEŞHİS: Arıza tespiti için ekrandaki simgeye tıklayın."
+				instruction_label.modulate = Color(0.4, 0.9, 1.0)
+			else:
+				instruction_label.text = "🔍 Cihazı Teşhis Masasına (Diagnostic Bench) koyun."
+				instruction_label.modulate = Color(1.0, 0.85, 0.3)
+
+		"DIAGNOSED":
+			if station_type in ["workbench", "repair_table", ""]:
+				var count: int = _unscrewed_indices.size()
+				instruction_label.text = "🪛 KASAYI AÇ: 4 vidayı sökün (%d/4) [Arıza: %s]" % [count, fault_name]
+				instruction_label.modulate = Color(1.0, 0.9, 0.35)
+			else:
+				instruction_label.text = "🔧 TEŞHİS: %s — Cihazı Tamir Masasına (Workbench) götürün." % fault_name
+				instruction_label.modulate = Color(1.0, 0.8, 0.3)
+
+		"DISASSEMBLED":
+			var missing := _current_device.get_missing_components()
+			var missing_names: PackedStringArray = []
+			for m in missing:
+				if m:
+					missing_names.append(m.component_name)
+			var missing_str: String = ", ".join(missing_names) if not missing_names.is_empty() else "Parça"
+			instruction_label.text = "📦 PARÇA MONTAJI: Parça Rafından gereken parçayı alıp takın (%s)." % missing_str
+			instruction_label.modulate = Color(0.4, 0.9, 0.5)
+
+		"PART_REPLACED":
+			if station_type in ["workbench", "repair_table", ""]:
+				instruction_label.text = "🔩 KASAYI KAPAT: Cihazı toplayıp vidaları sıkmak için simgeye tıklayın."
+				instruction_label.modulate = Color(0.5, 0.85, 1.0)
+			else:
+				instruction_label.text = "🔩 Cihazı Tamir Masasına (Workbench) götürün."
+				instruction_label.modulate = Color(1.0, 0.85, 0.3)
+
+		"REASSEMBLED":
+			if station_type in ["software", "software_station", ""]:
+				instruction_label.text = "💻 YAZILIM YÜKLE: İşletim sistemini yüklemek için simgeye tıklayın."
+				instruction_label.modulate = Color(0.4, 0.9, 1.0)
+			else:
+				instruction_label.text = "💻 Cihazı Yazılım Masasına (Software Station) götürün."
+				instruction_label.modulate = Color(1.0, 0.85, 0.3)
+
+		"TESTED":
+			instruction_label.text = "✅ TEST BAŞARILI: Cihazı Teslimat Masasına (Delivery Counter) teslim edin."
+			instruction_label.modulate = Color(0.4, 1.0, 0.5)
+
+		_:
+			instruction_label.text = "📱 CİHAZ İNCELEME"
+			instruction_label.modulate = Color.WHITE
 
 
 func _start_scan_anim(on_complete: Callable, label_text: String = "⚡ DIAGNOSTIC SCAN IN PROGRESS...") -> void:
@@ -847,18 +928,18 @@ static func get_next_step_hint(device: Device) -> String:
 		"DIAGNOSED":
 			if device.assigned_fault and device.assigned_fault.skip_states.has("DISASSEMBLED"):
 				return "This device needs software only. Take it to the Software Station."
-			return "Take this device to a Repair Table and disassemble it with a screwdriver."
+			return "Take this device to the Workbench (Repair Table) and disassemble it."
 		"DISASSEMBLED":
 			var missing := device.get_missing_components()
 			if missing.is_empty():
-				return "All parts installed. Reassemble the device at the Repair Table."
+				return "All parts installed. Reassemble the device at the Workbench (Repair Table)."
 			var names: PackedStringArray = []
 			for m in missing:
 				if m:
 					names.append(m.component_name)
 			return "Get these parts from the Parts Shelf: %s" % ", ".join(names)
 		"PART_REPLACED":
-			return "Reassemble the device at the Repair Table (needs screwdriver)."
+			return "Reassemble the device at the Workbench (Repair Table)."
 		"REASSEMBLED":
 			return "Take to the Software Station to reinstall OS and run diagnostic tests."
 		"TESTED":

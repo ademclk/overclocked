@@ -15,7 +15,7 @@ environment = ExtResource("2_hptm8")
 [node name="CameraRig" parent="." unique_id=1955349663 instance=ExtResource("3_v8ekm")]
 
 [node name="Workshop" parent="." unique_id=162648362 instance=ExtResource("4_n4mpe")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.057566166, -0.03167057, 0.030293941)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16777086, -1.1646366, 1.089972)
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=1866551873]
 

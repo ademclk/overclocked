@@ -34,30 +34,39 @@ static func _build_workbench_menu(wb: WorkbenchStation, player: PlayerCharacter)
 	var has_device_on_bench: bool = wb.placed_device != null
 
 	if not has_device_on_bench:
-		# Empty bench options
 		if carry and carry.is_carrying():
 			var held: Carriable = carry.get_held_item()
-			if held is Device or held.item_type == "device":
-				var dev: Device = held as Device if held is Device else null
+			if held is Device:
+				var dev: Device = held as Device
+				var can_place: bool = wb._can_accept_workbench_item(held)
 				var place_opt := InteractionMenuOption.new(
 					"place_device",
 					"Place %s on Workbench" % held.item_name,
-					"Devices cannot be placed on Workbench. Use Repair Table for hardware repairs.",
-					Callable(),
-					false
+					"Set down the %s on the workbench for hardware repair." % held.item_name,
+					func() -> void: wb._on_interacted(player),
+					can_place
 				)
-				place_opt.disabled_reason = "Cannot place devices on Workbench (Use Repair Table)"
+				if not can_place:
+					if dev.current_repair_state == RepairState.State.RECEIVED:
+						place_opt.disabled_reason = "Must be diagnosed at Diagnostic Bench first"
+					elif dev.current_repair_state == RepairState.State.REASSEMBLED:
+						place_opt.disabled_reason = "Hardware repair complete - take to Software Station"
+					elif dev.current_repair_state == RepairState.State.TESTED:
+						place_opt.disabled_reason = "Device tested - take to Delivery Counter"
+					elif dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
+						place_opt.disabled_reason = "No hardware repair needed (software only)"
+					else:
+						place_opt.disabled_reason = "Cannot repair this device on Workbench"
 				options.append(place_opt)
 
 				# Examine held device
-				if dev:
-					var examine_held := InteractionMenuOption.new(
-						"examine",
-						"Examine %s" % held.item_name,
-						_build_device_description(dev),
-						func() -> void: _trigger_device_examination(player, dev, wb)
-					)
-					options.append(examine_held)
+				var examine_held := InteractionMenuOption.new(
+					"examine",
+					"Examine %s" % held.item_name,
+					_build_device_description(dev),
+					func() -> void: _trigger_device_examination(player, dev, wb)
+				)
+				options.append(examine_held)
 			elif held is ToolItem:
 				if wb.get_bench_tool() == null:
 					var place_tool := InteractionMenuOption.new(
@@ -90,23 +99,94 @@ static func _build_workbench_menu(wb: WorkbenchStation, player: PlayerCharacter)
 				pickup_tool.disabled_reason = "Hands full"
 			options.append(pickup_tool)
 	else:
-		# Bench has a device (recovery / bug rescue)
+		# Bench has a device
 		var dev: Device = wb.placed_device as Device if wb.placed_device is Device else null
 		if dev:
 			var examine_opt := InteractionMenuOption.new(
 				"examine",
-				"Examine Device",
+				"Examine / Work on Device",
 				_build_device_description(dev),
 				func() -> void: _trigger_device_examination(player, dev, wb)
 			)
 			options.append(examine_opt)
 
-		var is_holding_tool: bool = carry != null and carry.is_carrying() and carry.get_held_item() is ToolItem
-		var can_pick: bool = carry != null and (carry.can_pick_up() or is_holding_tool)
-		var pickup_label: String = "Pick Up Device" if not is_holding_tool else "Pick Up Device (Stow Tool)"
+			var r_state: String = str(dev.get_repair_state())
+			match r_state:
+				"DIAGNOSED":
+					var disasm := InteractionMenuOption.new(
+						"disassemble",
+						"Disassemble Device",
+						"Open the device to access internal components.",
+						func() -> void:
+							wb.set_active_user(player)
+							var hud := player.get_tree().get_first_node_in_group("hud") if (player and player.is_inside_tree()) else null
+							if hud and not hud.is_queued_for_deletion() and hud.has_method("start_repair_minigame"):
+								hud.start_repair_minigame(player, dev, "screw", func() -> void:
+									wb._start_disassembly()
+									wb._complete_processing()
+								)
+							else:
+								wb._start_disassembly(),
+						true
+					)
+					options.append(disasm)
+
+				"DISASSEMBLED":
+					if carry and carry.is_carrying():
+						var held: Carriable = carry.get_held_item()
+						if held and held.item_type == "part":
+							var is_valid_part: bool = wb._is_valid_replacement_part(dev, held)
+							var install := InteractionMenuOption.new(
+								"install_part",
+								"Install %s" % held.item_name,
+								"Install this component into the device.",
+								func() -> void: wb._try_install_part(player),
+								is_valid_part
+							)
+							if not is_valid_part:
+								install.disabled_reason = "Wrong part for this device"
+							options.append(install)
+
+					if dev.assigned_fault and dev.assigned_fault.is_multi_fault:
+						var missing: Array[ComponentData] = dev.get_missing_components()
+						if not missing.is_empty():
+							var names: PackedStringArray = []
+							for m in missing:
+								if m:
+									names.append(m.component_name)
+							var info := InteractionMenuOption.new(
+								"missing_parts_info",
+								"Needed: %s" % ", ".join(names),
+								"These components still need to be installed before reassembly.",
+								Callable(),
+								false
+							)
+							info.disabled_reason = "Info only"
+							options.append(info)
+
+				"PART_REPLACED":
+					var reassem := InteractionMenuOption.new(
+						"reassemble",
+						"Reassemble Device",
+						"Close up the device. Component installation complete.",
+						func() -> void:
+							wb.set_active_user(player)
+							var hud := player.get_tree().get_first_node_in_group("hud") if (player and player.is_inside_tree()) else null
+							if hud and not hud.is_queued_for_deletion() and hud.has_method("start_repair_minigame"):
+								hud.start_repair_minigame(player, dev, "screw", func() -> void:
+									wb._start_reassembly()
+									wb._complete_processing()
+								)
+							else:
+								wb._start_reassembly(),
+						true
+					)
+					options.append(reassem)
+
+		var can_pick: bool = carry != null and carry.can_pick_up()
 		var pickup := InteractionMenuOption.new(
 			"pick_up",
-			pickup_label,
+			"Pick Up Device",
 			"Remove the device from the workbench.",
 			func() -> void: wb._try_pick_up(player),
 			can_pick
@@ -204,7 +284,7 @@ static func _build_repair_table_menu(table: RepairTableStation, player: PlayerCh
 			var r_state: String = str(dev.get_repair_state())
 			match r_state:
 				"DIAGNOSED":
-					var has_tool: bool = table._has_required_tool(player)
+					var has_tool: bool = true
 					var disasm := InteractionMenuOption.new(
 						"disassemble",
 						"Disassemble Device",
@@ -264,7 +344,7 @@ static func _build_repair_table_menu(table: RepairTableStation, player: PlayerCh
 							options.append(info)
 
 				"PART_REPLACED":
-					var has_tool: bool = table._has_required_tool(player)
+					var has_tool: bool = true
 					var reassem := InteractionMenuOption.new(
 						"reassemble",
 						"Reassemble Device",

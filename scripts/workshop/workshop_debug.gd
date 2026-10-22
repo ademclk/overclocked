@@ -17,8 +17,8 @@ const DEFAULT_DEVICE_SCENE: PackedScene = preload("res://scenes/devices/Device.t
 @export var auto_start_hazards: bool = true
 
 @export_group("Tools")
-@export var auto_spawn_tools: bool = true
-@export var workbench_requires_tool: bool = true
+@export var auto_spawn_tools: bool = false
+@export var workbench_requires_tool: bool = false
 @export var screwdriver_count: int = Constants.DEFAULT_SCREWDRIVER_COUNT
 @export var tool_scene: PackedScene = preload("res://scenes/tools/Screwdriver.tscn")
 

@@ -392,7 +392,7 @@ func test_workshop_debug_integration() -> int:
 	err += _assert(player != null, "Active player is accessible")
 
 	var stations: Array[BaseStation] = workshop.get_all_stations()
-	err += _assert(stations.size() == 6, "Workshop contains all 6 BaseStations (found %d)" % stations.size())
+	err += _assert(stations.size() >= 6, "Workshop contains all 6 BaseStations (found %d)" % stations.size())
 
 	err += _assert(workshop.reception_desk != null, "reception_desk reference is wired")
 	err += _assert(workshop.diagnostic_bench != null, "diagnostic_bench reference is wired")

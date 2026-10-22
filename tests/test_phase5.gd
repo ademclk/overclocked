@@ -187,110 +187,37 @@ func _test_5c_station_menu_builder() -> void:
 			place_opt = o
 			break
 	var has_examine_opt := carry_opts.any(func(o: InteractionMenuOption) -> bool: return o.option_id == "examine")
-	assert_test(place_opt != null and not place_opt.is_enabled, "Workbench rejects placing device (Hardware repair moved to Repair Table)")
-	assert_test(place_opt.disabled_reason.contains("Repair Table"), "Workbench place device option points to Repair Table")
+	assert_test(place_opt != null and not place_opt.is_enabled, "Workbench rejects placing un-diagnosed device")
+	assert_test(place_opt.disabled_reason.contains("Diagnostic Bench"), "Workbench place device option points to Diagnostic Bench")
 	assert_test(has_examine_opt, "Workbench presents 'Examine Device' option when carrying device")
 
-	# 3. Dedicated Repair Table with Diagnosed Phone
-	carry.drop_item()
-	var rt := RepairTableStation.new()
-	add_child(rt)
-	rt.requires_tool = true
+	# 3. Unified Workbench with Diagnosed Phone
 	dev.diagnose()
-	carry.pick_up(dev)
-	var rt_carry_opts := StationMenuBuilder.build_menu(rt, player)
-	var rt_place: InteractionMenuOption = rt_carry_opts.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_device")[0]
-	assert_test(rt_place != null and rt_place.is_enabled, "Repair Table accepts diagnosed device")
-	rt_place.action_callable.call()
-	assert_test(rt.placed_device == dev, "Diagnosed device successfully placed on Repair Table")
+	var wb_diag_opts := StationMenuBuilder.build_menu(wb, player)
+	var wb_place: InteractionMenuOption = wb_diag_opts.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_device")[0]
+	assert_test(wb_place != null and wb_place.is_enabled, "Workbench accepts diagnosed device directly")
+	wb_place.action_callable.call()
+	assert_test(wb.placed_device == dev, "Diagnosed device successfully placed on Workbench")
 
-	var diag_opts := StationMenuBuilder.build_menu(rt, player)
+	var bench_opts := StationMenuBuilder.build_menu(wb, player)
 	var disasm_opt: InteractionMenuOption = null
-	for o in diag_opts:
+	for o in bench_opts:
 		if o.option_id == "disassemble":
 			disasm_opt = o
 			break
-	assert_test(disasm_opt != null, "Diagnosed device on repair table has 'Disassemble' option")
-	assert_test(not disasm_opt.is_enabled, "Disassemble disabled when player has no required tool")
-	assert_test(disasm_opt.disabled_reason.contains("screwdriver"), "Disassemble shows disabled reason for missing tool")
+	assert_test(disasm_opt != null and disasm_opt.is_enabled, "Diagnosed device on workbench has 'Disassemble' enabled without physical tool")
 
-	# Give player a screwdriver
-	var tool := ToolItem.new()
-	tool.tool_id = "screwdriver"
-	tool.item_name = "Screwdriver"
-	add_child(tool)
-	carry.pick_up(tool)
+	# Disassemble at workbench directly
+	disasm_opt.action_callable.call()
+	wb._complete_processing()
+	assert_test(str(dev.get_repair_state()) == "DISASSEMBLED", "Device disassembled on Workbench")
 
-	var diag_opts_with_tool := StationMenuBuilder.build_menu(rt, player)
-	var disasm_with_tool: InteractionMenuOption = null
-	for o in diag_opts_with_tool:
-		if o.option_id == "disassemble":
-			disasm_with_tool = o
-			break
-	assert_test(disasm_with_tool != null and disasm_with_tool.is_enabled, "Disassemble enabled when player carries screwdriver")
-
-	# Test: While carrying tool with device on repair table, place_tool option is available
-	var place_tool_opt: InteractionMenuOption = null
-	for o in diag_opts_with_tool:
-		if o.option_id == "place_tool":
-			place_tool_opt = o
-			break
-	assert_test(place_tool_opt != null and place_tool_opt.is_enabled, "Carrying tool with device on table offers 'Place on Repair Table' option")
-	place_tool_opt.action_callable.call()
-	assert_test(rt.get_bench_tool() == tool, "Tool successfully placed on repair table alongside device")
-	assert_test(not carry.is_carrying(), "Player hands free after placing tool")
-
-	# Test: When table already has a tool and player carries another tool, offers 'Drop to Ground'
-	var tool2 := ToolItem.new()
-	tool2.tool_id = "screwdriver"
-	tool2.item_name = "Screwdriver 2"
-	add_child(tool2)
-	carry.pick_up(tool2)
-	var opts_two_tools := StationMenuBuilder.build_menu(rt, player)
-	var drop_tool_opt: InteractionMenuOption = null
-	for o in opts_two_tools:
-		if o.option_id == "drop_tool":
-			drop_tool_opt = o
-			break
-	assert_test(drop_tool_opt != null and drop_tool_opt.is_enabled, "When table has a tool, second carried tool offers 'Drop to Ground'")
-	drop_tool_opt.action_callable.call()
-	assert_test(not carry.is_carrying(), "Player dropped second tool to ground")
-	tool2.queue_free()
-
-	# Test: Pickup device while holding a tool auto-stows or drops tool
-	var tool3 := ToolItem.new()
-	tool3.tool_id = "screwdriver"
-	tool3.item_name = "Screwdriver 3"
-	add_child(tool3)
-	carry.pick_up(tool3)
-	var pickup_with_tool_opt: InteractionMenuOption = null
-	for o in StationMenuBuilder.build_menu(rt, player):
-		if o.option_id == "pick_up":
-			pickup_with_tool_opt = o
-			break
-	assert_test(pickup_with_tool_opt != null and pickup_with_tool_opt.is_enabled, "Pick Up Device is enabled even while carrying tool")
-	pickup_with_tool_opt.action_callable.call()
-	assert_test(carry.is_carrying() and carry.get_held_item() == dev, "Player picked up device from repair table while tool was auto-stowed/dropped")
+	# Pick Up Device from workbench
+	var pick_opt: InteractionMenuOption = StationMenuBuilder.build_menu(wb, player).filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "pick_up")[0]
+	assert_test(pick_opt != null and pick_opt.is_enabled, "Pick Up Device enabled on workbench")
+	pick_opt.action_callable.call()
+	assert_test(carry.is_carrying() and carry.get_held_item() == dev, "Player picked up disassembled device from workbench")
 	carry.drop_item()
-	tool3.queue_free()
-
-	# Test: Empty table with bench_tool already present and player carrying another tool
-	var tool4 := ToolItem.new()
-	tool4.tool_id = "screwdriver"
-	tool4.item_name = "Screwdriver 4"
-	add_child(tool4)
-	carry.pick_up(tool4)
-	var empty_table_opts := StationMenuBuilder.build_menu(rt, player)
-	var empty_drop_opt: InteractionMenuOption = null
-	for o in empty_table_opts:
-		if o.option_id == "drop_tool":
-			empty_drop_opt = o
-			break
-	assert_test(empty_drop_opt != null and empty_drop_opt.is_enabled, "Empty table with tool present offers 'Drop to Ground' for second tool")
-	empty_drop_opt.action_callable.call()
-	assert_test(not carry.is_carrying(), "Player dropped tool on empty table with existing tool")
-	tool4.queue_free()
-	rt.queue_free()
 
 	# Test: Workbench tool storage & distribution
 	var wb_tool := ToolItem.new()
@@ -338,7 +265,6 @@ func _test_5c_station_menu_builder() -> void:
 	shelf.queue_free()
 	delivery.queue_free()
 	dev.queue_free()
-	tool.queue_free()
 	player.queue_free()
 
 
@@ -728,30 +654,24 @@ func _test_phone_regression_with_menus() -> void:
 	diag_pickup_opt.action_callable.call()
 	assert_test(carry.is_carrying() and phone.is_diagnosed, "Phone diagnosed and picked up via menu")
 
-	# 2. Hardware repair at dedicated Repair Table
-	var rt := RepairTableStation.new()
+	# 2. Hardware repair directly on Workbench (no physical tool needed)
+	var rt := wb
 	rt.disassembly_time = 0.05
 	rt.reassembly_time = 0.05
-	rt.requires_tool = true
-	add_child(rt)
+	rt.requires_tool = false
 
-	# Verify workbench rejects placing phone (as requested by overhaul)
+	# Verify workbench accepts placing diagnosed phone
 	var wb_check_menu = StationMenuBuilder.build_menu(wb, player)
-	var wb_reject_opt: InteractionMenuOption = wb_check_menu.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_device")[0]
-	assert_test(not wb_reject_opt.is_enabled, "Workbench correctly rejects device placement")
+	var wb_place_chk: InteractionMenuOption = wb_check_menu.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_device")[0]
+	assert_test(wb_place_chk.is_enabled, "Workbench accepts diagnosed phone placement")
 
-	# Place screwdriver on repair table
-	var rt_tool := ToolItem.new()
-	rt_tool.tool_id = "screwdriver"
-	rt_tool.item_name = "Screwdriver"
-	rt.add_child(rt_tool)
-	rt._bench_tool = rt_tool
+	# Skip tools on workbench
 
 	# Place diagnosed phone on Repair Table
 	var rt_menu1 = StationMenuBuilder.build_menu(rt, player)
 	var rt_place_opt: InteractionMenuOption = rt_menu1.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_device")[0]
 	rt_place_opt.action_callable.call()
-	assert_test(rt.placed_device == phone, "Phone placed on Repair Table via menu")
+	assert_test(rt.placed_device == phone, "Phone placed on Workbench via menu")
 
 	var rt_menu2 = StationMenuBuilder.build_menu(rt, player)
 	var disasm_opt: InteractionMenuOption = rt_menu2.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "disassemble")[0]
@@ -941,18 +861,33 @@ func _test_5k_hazard_3d_minigames() -> void:
 	exam_panel.queue_free()
 	diag_b.queue_free()
 
-	# --- OVERHAUL 3: Workbench Rejects Faulty Devices ---
+	# --- OVERHAUL 3: Workbench Unified Repair & 4-Screw Disassembly ---
 	var wb_test := WorkbenchStation.new()
 	add_child(wb_test)
-	assert_test(not wb_test.can_accept_device(test_phone), "Workbench Station rejects accepting devices")
-	assert_test(not wb_test._can_accept_workbench_item(test_phone), "Workbench _can_accept_workbench_item returns false for device")
+	assert_test(wb_test.can_accept_device(test_phone), "Workbench Station accepts diagnosed devices")
+	assert_test(wb_test._can_accept_workbench_item(test_phone), "Workbench _can_accept_workbench_item returns true for diagnosed device")
 
-	# Recovery verification: if device is somehow on workbench, pick up is enabled
+	# Test 4-screw disassembly and auto-close
 	wb_test.placed_device = test_phone
+	var exam_panel2: DeviceExaminationPanel = load("res://scenes/ui/DeviceExaminationPanel.tscn").instantiate() as DeviceExaminationPanel
+	add_child(exam_panel2)
+	exam_panel2.open_panel(p2, test_phone, wb_test)
+	assert_test(exam_panel2.is_open(), "Examination panel opened for workbench disassembly")
+	var screw_hs = exam_panel2._active_hotspots.filter(func(h: Node) -> bool: return h.action_id.begins_with("unscrew_"))
+	assert_test(screw_hs.size() == 4, "Workbench disassembly provides 4 screw hotspots")
+	exam_panel2._on_screw_clicked(0)
+	exam_panel2._on_screw_clicked(1)
+	exam_panel2._on_screw_clicked(2)
+	exam_panel2._on_screw_clicked(3)
+	assert_test(str(test_phone.get_repair_state()) == "DISASSEMBLED", "Clicking 4 screws disassembles casing")
+	assert_test(not exam_panel2.is_open(), "Panel automatically closes upon completing 4 screws")
+	exam_panel2.queue_free()
+
+	# Pickup verification: disassembled device on workbench can be cleanly picked up
 	p2.carry_system.drop_item()
 	var wb_rescue_opts := StationMenuBuilder.build_menu(wb_test, p2)
 	var rescue_opt: InteractionMenuOption = wb_rescue_opts.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "pick_up")[0]
-	assert_test(rescue_opt != null and rescue_opt.is_enabled, "Stuck device on workbench can be cleanly picked up")
+	assert_test(rescue_opt != null and rescue_opt.is_enabled, "Device on workbench can be cleanly picked up")
 	rescue_opt.action_callable.call()
 	assert_test(p2.carry_system.is_carrying() and p2.carry_system.get_held_item() == test_phone, "Player cleanly picked up device from workbench")
 	p2.carry_system.drop_item()
