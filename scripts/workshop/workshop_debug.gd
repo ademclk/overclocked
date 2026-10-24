@@ -16,15 +16,8 @@ const DEFAULT_DEVICE_SCENE: PackedScene = preload("res://scenes/devices/Device.t
 @export var default_device_data: DeviceData = DEFAULT_PHONE_DATA
 @export var auto_start_hazards: bool = true
 
-@export_group("Tools")
-@export var auto_spawn_tools: bool = false
-@export var workbench_requires_tool: bool = false
-@export var screwdriver_count: int = Constants.DEFAULT_SCREWDRIVER_COUNT
-@export var tool_scene: PackedScene = preload("res://scenes/tools/Screwdriver.tscn")
-
 var active_players: Array[PlayerCharacter] = []
 var _debug_focused_player: int = 0
-var _workshop_tools: Array[ToolItem] = []
 
 @onready var floor_node: CSGBox3D = $Floor
 @onready var directional_light: DirectionalLight3D = $DirectionalLight3D
@@ -50,11 +43,6 @@ var _workshop_tools: Array[ToolItem] = []
 	get_node_or_null("Stations/Workbench")
 	if has_node("Stations/Workbench")
 	else (get_node_or_null("Workbench") if has_node("Workbench") else get_node_or_null("WorkbenchStation"))
-)
-@onready var repair_table: RepairTableStation = (
-	get_node_or_null("Stations/RepairTable") as RepairTableStation
-	if has_node("Stations/RepairTable")
-	else get_node_or_null("RepairTable") as RepairTableStation
 )
 @onready var parts_shelf: PartsShelf = (
 	get_node_or_null("Stations/PartsShelf") as PartsShelf
@@ -189,13 +177,6 @@ func start_round() -> void:
 	if auto_start_hazards and hazard_manager and is_instance_valid(hazard_manager):
 		hazard_manager.start()
 
-	# Tool System setup
-	if auto_spawn_tools:
-		_spawn_tools()
-
-	if workbench and "requires_tool" in workbench:
-		workbench.requires_tool = workbench_requires_tool
-
 	# Initialize parts shelf stock
 	if parts_shelf and is_instance_valid(parts_shelf):
 		parts_shelf._init_stock()
@@ -218,8 +199,6 @@ func _connect_order_pipeline() -> void:
 	if not overheating_hazard:
 		overheating_hazard = get_node_or_null("OverheatingHazard") as OverheatingHazard
 	if overheating_hazard:
-		if repair_table:
-			overheating_hazard.register_workbench(repair_table)
 		if workbench is WorkbenchStation:
 			overheating_hazard.register_workbench(workbench as WorkbenchStation)
 
@@ -360,10 +339,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_debug_spawn_priority_order()
 			get_viewport().set_input_as_handled()
 			return
-		if event.ctrl_pressed and event.keycode == KEY_F7:
-			_debug_toggle_tool_requirement()
-			get_viewport().set_input_as_handled()
-			return
 		if event.ctrl_pressed and event.keycode == KEY_F8:
 			_debug_restock_shelf()
 			get_viewport().set_input_as_handled()
@@ -443,10 +418,6 @@ func _unhandled_input(event: InputEvent) -> void:
 					return
 				KEY_F7:
 					_debug_max_combo()
-					get_viewport().set_input_as_handled()
-					return
-				KEY_F8:
-					_debug_set_tools_low_durability()
 					get_viewport().set_input_as_handled()
 					return
 				KEY_F9:
@@ -691,12 +662,6 @@ func _debug_spawn_random_hazard() -> void:
 			print("[Debug F12] HazardManager skipped spawn (at max capacity).")
 
 
-func _debug_toggle_tool_requirement() -> void:
-	if workbench and "requires_tool" in workbench:
-		workbench.requires_tool = not workbench.requires_tool
-		print("[Debug Ctrl+F7] Workbench requires_tool toggled to: %s" % str(workbench.requires_tool))
-
-
 func _debug_restock_shelf() -> void:
 	if parts_shelf and is_instance_valid(parts_shelf):
 		parts_shelf.restock_all(3)
@@ -726,55 +691,6 @@ func spawn_delivery_box(parts_dict: Dictionary = {}) -> DeliveryBox:
 	box.global_position = spawn_pos
 	box.spawn_position = spawn_pos
 	return box
-
-
-## Spawns workshop tools (e.g. screwdrivers) into the workshop
-func _spawn_tools() -> void:
-	for t in _workshop_tools:
-		if is_instance_valid(t):
-			t.queue_free()
-	_workshop_tools.clear()
-
-	var tools_container: Node3D = get_node_or_null("Tools") as Node3D
-	if not tools_container:
-		tools_container = Node3D.new()
-		tools_container.name = "Tools"
-		add_child(tools_container)
-
-	for i in range(screwdriver_count):
-		var tool: ToolItem = null
-		if tool_scene:
-			tool = tool_scene.instantiate() as ToolItem
-		if not tool:
-			tool = ToolItem.new()
-			tool.tool_id = "screwdriver"
-			tool.tool_display_name = "Screwdriver"
-			tool.name = "Screwdriver_%d" % (i + 1)
-			tool.setup_interaction_zone()
-
-		tool.name = "Screwdriver_%d" % (i + 1)
-		tools_container.add_child(tool)
-		var pos := _get_tool_spawn_position(i)
-		tool.global_position = pos
-		tool.spawn_position = pos
-		_workshop_tools.append(tool)
-
-
-func _get_tool_spawn_position(index: int) -> Vector3:
-	var base_pos: Vector3 = Vector3(-3.8, 0.9, 0.5)
-	if workbench and is_instance_valid(workbench):
-		base_pos = workbench.global_position + Vector3(0.7, 0.9, 0.0)
-	return base_pos + Vector3(0.0, 0.0, 0.4 * index)
-
-
-## Returns all currently active and valid ToolItem instances in the workshop
-func get_all_tools() -> Array[ToolItem]:
-	_clean_tools()
-	return _workshop_tools.duplicate()
-
-
-func _clean_tools() -> void:
-	_workshop_tools = _workshop_tools.filter(func(t: ToolItem) -> bool: return is_instance_valid(t))
 
 
 func _debug_dump_state() -> void:
@@ -823,12 +739,6 @@ func _debug_dump_state() -> void:
 			print("  - Hazard: %s (%s) at %v | State: %s" % [
 				h.hazard_name, h.hazard_type, h.global_position, BaseHazard.HazardState.keys()[h.current_state]
 			])
-
-	_clean_tools()
-	var bench_tool_name := "None"
-	if workbench and "get_bench_tool" in workbench and workbench.get_bench_tool():
-		bench_tool_name = workbench.get_bench_tool().item_name
-	print("Tools: %d in workshop | Workbench Tool: %s" % [_workshop_tools.size(), bench_tool_name])
 
 	print("Stations:")
 	for st in get_all_stations():
@@ -890,15 +800,6 @@ func _debug_max_combo() -> void:
 	for i in range(5):
 		ComboTracker.on_repair_completed()
 	print("[Debug Shift+F7] Combo set to streak %d (×%.1f)" % [ComboTracker.get_streak(), ComboTracker.get_multiplier()])
-
-
-func _debug_set_tools_low_durability() -> void:
-	var tools := get_tree().get_nodes_in_group("tools")
-	for t in tools:
-		if t is ToolItem:
-			t.current_durability = 1
-			t.durability_changed.emit(1, t.max_durability)
-	print("[Debug Shift+F8] All tools set to 1 durability")
 
 
 func _debug_spawn_all_hazards() -> void:

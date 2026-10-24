@@ -280,7 +280,7 @@ func _discover_targets() -> void:
 			for node in parent_node.find_children("*", "", true, false):
 				if node is BaseStation and not node.is_queued_for_deletion():
 					var st := node as BaseStation
-					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "repair_table" or st.station_type == "trash":
+					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "trash":
 						continue
 					if not surge_target_stations.has(st):
 						surge_target_stations.append(st)
@@ -289,7 +289,7 @@ func _discover_targets() -> void:
 			for node in tree.get_nodes_in_group("stations"):
 				if node is BaseStation and not node.is_queued_for_deletion():
 					var st := node as BaseStation
-					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "repair_table" or st.station_type == "trash":
+					if st is ReceptionDesk or st is DeliveryCounter or st.station_type == "trash":
 						continue
 					if not surge_target_stations.has(st):
 						surge_target_stations.append(st)

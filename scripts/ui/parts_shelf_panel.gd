@@ -79,12 +79,12 @@ func _get_needed_component_ids() -> Array[String]:
 				if comp and not needed_ids.has(comp.component_id):
 					needed_ids.append(comp.component_id)
 
-	# Check 2: Active device on Repair Table / Stations
+	# Check 2: Active device on Workbench / Stations
 	if needed_ids.is_empty() and is_inside_tree():
-		var repair_tables := get_tree().get_nodes_in_group("repair_tables")
-		for rt in repair_tables:
-			if rt is BaseStation and rt.placed_device is Device:
-				for comp in (rt.placed_device as Device).get_missing_components():
+		var workbenches := get_tree().get_nodes_in_group("workbenches")
+		for wb in workbenches:
+			if wb is BaseStation and wb.placed_device is Device:
+				for comp in (wb.placed_device as Device).get_missing_components():
 					if comp and not needed_ids.has(comp.component_id):
 						needed_ids.append(comp.component_id)
 

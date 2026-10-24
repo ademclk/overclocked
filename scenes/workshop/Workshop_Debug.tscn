@@ -18,7 +18,6 @@
 [ext_resource type="Resource" path="res://resources/devices/game_console.tres" id="16_console"]
 [ext_resource type="Resource" path="res://resources/devices/router.tres" id="17_router"]
 [ext_resource type="Resource" path="res://resources/devices/desktop_pc.tres" id="18_desktop"]
-[ext_resource type="PackedScene" path="res://scenes/stations/RepairTable.tscn" id="19_repair_table"]
 [ext_resource type="PackedScene" path="res://scenes/stations/TrashBin.tscn" id="20_trash_bin"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_va5xn"]

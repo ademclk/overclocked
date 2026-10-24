@@ -219,26 +219,6 @@ func _test_5c_station_menu_builder() -> void:
 	assert_test(carry.is_carrying() and carry.get_held_item() == dev, "Player picked up disassembled device from workbench")
 	carry.drop_item()
 
-	# Test: Workbench tool storage & distribution
-	var wb_tool := ToolItem.new()
-	wb_tool.tool_id = "screwdriver"
-	wb_tool.item_name = "Workbench Screwdriver"
-	add_child(wb_tool)
-	carry.pick_up(wb_tool)
-	var wb_store_opts := StationMenuBuilder.build_menu(wb, player)
-	var place_wb_opt: InteractionMenuOption = wb_store_opts.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "place_tool")[0]
-	assert_test(place_wb_opt != null and place_wb_opt.is_enabled, "Workbench accepts placing tool for storage")
-	place_wb_opt.action_callable.call()
-	assert_test(wb.get_bench_tool() == wb_tool, "Tool successfully stored on Workbench")
-
-	var wb_pick_opts := StationMenuBuilder.build_menu(wb, player)
-	var pick_wb_tool: InteractionMenuOption = wb_pick_opts.filter(func(o: InteractionMenuOption) -> bool: return o.option_id == "pick_up_tool")[0]
-	assert_test(pick_wb_tool != null and pick_wb_tool.is_enabled, "Workbench dispenses stored screwdriver")
-	pick_wb_tool.action_callable.call()
-	assert_test(carry.is_carrying() and carry.get_held_item() == wb_tool, "Player successfully picked up screwdriver from Workbench")
-	carry.drop_item()
-	wb_tool.queue_free()
-
 	# 4. Diagnostic Bench menu
 	var diag_bench := DiagnosticBench.new()
 	add_child(diag_bench)
@@ -358,13 +338,13 @@ func _test_5e_device_examination() -> void:
 	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Diagnostic Bench"), "Hint for RECEIVED points to Diagnostic Bench")
 
 	dev.current_repair_state = RepairState.State.DIAGNOSED
-	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Repair Table"), "Hint for DIAGNOSED points to Repair Table")
+	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Workbench"), "Hint for DIAGNOSED points to Workbench")
 
 	dev.current_repair_state = RepairState.State.DISASSEMBLED
 	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Parts Shelf"), "Hint for DISASSEMBLED points to Parts Shelf")
 
 	dev.current_repair_state = RepairState.State.PART_REPLACED
-	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Repair Table"), "Hint for PART_REPLACED points to Repair Table")
+	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Workbench"), "Hint for PART_REPLACED points to Workbench")
 
 	dev.current_repair_state = RepairState.State.TESTED
 	assert_test(DeviceExaminationPanel.get_next_step_hint(dev).contains("Delivery Counter"), "Hint for TESTED points to Delivery Counter")
@@ -373,17 +353,16 @@ func _test_5e_device_examination() -> void:
 	assert_test(not panel.is_open(), "Examination panel closes properly")
 	assert_test(not player.is_movement_locked(), "Player movement unlocked after closing examination panel")
 
-	# Test opening panel while device is DIAGNOSED on Repair Table
-	var rt_bench := RepairTableStation.new()
+	# Test opening panel while device is DIAGNOSED on Workbench
+	var rt_bench := WorkbenchStation.new()
 	add_child(rt_bench)
 	dev.current_repair_state = RepairState.State.DIAGNOSED
 	dev.is_diagnosed = true
 	rt_bench.accept_device(dev)
 
 	panel.open_panel(player, dev, rt_bench)
-	assert_test(panel.is_open(), "Panel opened on DIAGNOSED device on repair table")
-	assert_test(panel.fault_name_label.text.contains("CRACKED SCREEN"), "Diagnosed fault name shown")
-	assert_test(not panel.fault_desc_label.text.is_empty(), "Symptom description populated without error")
+	assert_test(panel.is_open(), "Panel opened on DIAGNOSED device on workbench")
+	assert_test(panel.instruction_label.text.contains("KASAYI AÇ") or panel.instruction_label.text.contains("Arıza"), "Instruction banner shown")
 	panel.close_panel()
 	rt_bench.queue_free()
 
@@ -398,8 +377,7 @@ func _test_5e_device_examination() -> void:
 
 	panel.open_panel(player, laptop_dev)
 	assert_test(panel.is_open(), "Panel opened on DISASSEMBLED multi-fault device")
-	assert_test(panel.fault_desc_label.text.contains("Symptoms:"), "Multi-fault symptoms populated successfully")
-	assert_test(panel.parts_container.get_child_count() > 0, "Multi-fault parts list populated")
+	assert_test(panel.instruction_label.text.contains("PARÇA MONTAJI"), "Multi-fault instruction banner shown")
 	# Test part installation via DeviceExaminationPanel without station (station = null)
 	var screen_comp: ComponentData = fault_data.broken_component
 	var part_item := Carriable.new()
@@ -631,7 +609,6 @@ func _test_phone_regression_with_menus() -> void:
 
 	var wb := WorkbenchStation.new()
 	wb.work_time = 0.05
-	wb.requires_tool = false
 	add_child(wb)
 
 	var soft := SoftwareStation.new()
@@ -658,7 +635,6 @@ func _test_phone_regression_with_menus() -> void:
 	var rt := wb
 	rt.disassembly_time = 0.05
 	rt.reassembly_time = 0.05
-	rt.requires_tool = false
 
 	# Verify workbench accepts placing diagnosed phone
 	var wb_check_menu = StationMenuBuilder.build_menu(wb, player)
@@ -898,9 +874,10 @@ func _test_5k_hazard_3d_minigames() -> void:
 	add_child(shelf_test)
 	shelf_test._init_stock()
 
-	# Put device in DISASSEMBLED state on a repair table so screen is needed
-	var rt_test := RepairTableStation.new()
+	# Put device in DISASSEMBLED state on a workbench so screen is needed
+	var rt_test := WorkbenchStation.new()
 	add_child(rt_test)
+	rt_test.add_to_group("workbenches")
 	test_phone.advance_repair_state() # DIAGNOSED -> DISASSEMBLED
 	rt_test.accept_device(test_phone)
 

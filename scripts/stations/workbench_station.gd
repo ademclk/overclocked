@@ -4,19 +4,12 @@ extends BaseStation
 ## Primary hardware repair workbench for Overclocked.
 ## Performs hardware repair operations: disassembly, component installation, and reassembly.
 ## Accepts devices in DIAGNOSED, DISASSEMBLED, and PART_REPLACED states.
-## Physical screwdriver tool requirement is removed; repairs are performed directly on this bench.
 
 @export var disassembly_time: float = 2.0
 @export var reassembly_time: float = 2.0
 @export var work_time: float = 2.0
 
-@export_group("Tool Requirements")
-@export var requires_tool: bool = false
-@export var required_tool_id: String = "screwdriver"
-@export var required_tool_name: String = "screwdriver"
-
 var _target_next_state: String = ""
-var _bench_tool: ToolItem = null
 
 
 func _ready() -> void:
@@ -25,78 +18,7 @@ func _ready() -> void:
 	processing_time = work_time
 	accepted_device_states = ["DIAGNOSED", "DISASSEMBLED", "PART_REPLACED"]
 	add_to_group("workbenches")
-	add_to_group("repair_tables")
 	super._ready()
-
-
-func _clean_bench_tool() -> void:
-	if _bench_tool != null:
-		if not is_instance_valid(_bench_tool) or _bench_tool.is_held or _bench_tool.is_queued_for_deletion():
-			_bench_tool = null
-		elif _bench_tool.get_parent() != self and (device_slot == null or _bench_tool.get_parent() != device_slot):
-			_bench_tool = null
-
-
-func get_bench_tool() -> ToolItem:
-	_clean_bench_tool()
-	return _bench_tool
-
-
-## Checks if a player has the required tool available (always true now that physical tools are removed)
-func _has_required_tool(_player: PlayerCharacter) -> bool:
-	if not requires_tool:
-		return true
-	_clean_bench_tool()
-	if _bench_tool != null and is_instance_valid(_bench_tool):
-		return true
-	if _player and _player.carry_system and _player.carry_system.is_carrying():
-		var held: Carriable = _player.carry_system.get_held_item()
-		if held is ToolItem:
-			return true
-	return true
-
-
-func _has_wrong_tool(_player: PlayerCharacter) -> bool:
-	return false
-
-
-## Place tool on workbench if carrying one (preserved for compatibility)
-func _try_place_tool(player: PlayerCharacter) -> bool:
-	if not player or not player.carry_system or not player.carry_system.is_carrying():
-		return false
-
-	_clean_bench_tool()
-	var held: Carriable = player.carry_system.get_held_item()
-	if held is ToolItem and _bench_tool == null:
-		var tool: ToolItem = held as ToolItem
-		player.carry_system.place_on_station(self)
-
-		_bench_tool = tool
-		if tool.get_parent():
-			tool.get_parent().remove_child(tool)
-		if device_slot:
-			device_slot.add_child(tool)
-			tool.position = Vector3(0.35, 0.0, 0.0)
-		else:
-			add_child(tool)
-			tool.position = Vector3(0.35, 0.9, 0.0)
-		_update_visual_state()
-		return true
-
-	return false
-
-
-## Pick up tool from workbench (preserved for compatibility)
-func _try_pick_up_tool(player: PlayerCharacter) -> bool:
-	if _bench_tool and is_instance_valid(_bench_tool) and player and player.carry_system and player.carry_system.can_pick_up():
-		var tool: ToolItem = _bench_tool
-		_bench_tool = null
-		if tool.get_parent():
-			tool.get_parent().remove_child(tool)
-		player.carry_system.pick_up(tool)
-		_update_visual_state()
-		return true
-	return false
 
 
 func can_accept_device(device: Carriable) -> bool:
@@ -134,13 +56,7 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 	# Case 1: Bench has no device
 	if not placed_device:
 		if carry.is_carrying():
-			var held: Carriable = carry.get_held_item()
-			if held is ToolItem:
-				return true
-			return _can_accept_workbench_item(held)
-		_clean_bench_tool()
-		if _bench_tool != null and is_instance_valid(_bench_tool):
-			return carry.can_pick_up()
+			return _can_accept_workbench_item(carry.get_held_item())
 		return false
 
 	# Case 2: Generic carriable fallback
@@ -158,7 +74,7 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				var held: Carriable = carry.get_held_item()
-				if held.item_type == "part":
+				if held and held.item_type == "part":
 					return _is_valid_replacement_part(placed_device, held)
 			return true
 		"PART_REPLACED":
@@ -184,11 +100,6 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 	if not placed_device:
 		if carry.is_carrying():
 			var held: Carriable = carry.get_held_item()
-			if held is ToolItem:
-				_clean_bench_tool()
-				if _bench_tool == null:
-					return "Place %s on Workbench" % held.item_name
-				return "Drop %s to Ground (Bench has tool)" % held.item_name
 			if held is Device:
 				var dev := held as Device
 				if dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
@@ -201,10 +112,6 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 					return "Device tested (Take to Delivery Counter)"
 			if _can_accept_workbench_item(held):
 				return "Place Device on Workbench"
-		elif _bench_tool != null and is_instance_valid(_bench_tool):
-			if carry.can_pick_up():
-				return "Pick Up %s" % _bench_tool.tool_display_name
-			return "Hands Full - Cannot Pick Up %s" % _bench_tool.tool_display_name
 		return ""
 
 	# Case 2: Generic Carriable fallback
@@ -225,7 +132,7 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				var held: Carriable = carry.get_held_item()
-				if held.item_type == "part":
+				if held and held.item_type == "part":
 					if _is_valid_replacement_part(placed_device, held):
 						return "Install %s" % held.item_name
 					return "Wrong Part - Need matching component"
@@ -259,18 +166,8 @@ func _on_interacted(player: PlayerCharacter) -> void:
 	if not placed_device:
 		if carry.is_carrying():
 			var held: Carriable = carry.get_held_item()
-			if held is ToolItem:
-				_clean_bench_tool()
-				if _bench_tool == null:
-					_try_place_tool(player)
-				else:
-					player.carry_system.drop_item()
-				return
 			if _can_accept_workbench_item(held):
 				_try_place_device(player)
-				return
-		elif _bench_tool != null and is_instance_valid(_bench_tool):
-			_try_pick_up_tool(player)
 		return
 
 	# Case 2: Overheated device
@@ -286,7 +183,7 @@ func _on_interacted(player: PlayerCharacter) -> void:
 		"DISASSEMBLED":
 			if carry.is_carrying():
 				var held: Carriable = carry.get_held_item()
-				if held.item_type == "part":
+				if held and held.item_type == "part":
 					if _is_valid_replacement_part(placed_device, held):
 						_try_install_part(player)
 					else:

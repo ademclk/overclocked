@@ -93,21 +93,18 @@ func _discover_workbenches() -> void:
 	var tree := get_tree()
 	if not tree:
 		return
-	for node in tree.get_nodes_in_group("repair_tables"):
+	for node in tree.get_nodes_in_group("workbenches"):
 		if node is BaseStation:
 			register_workbench(node as BaseStation)
 	for node in tree.get_nodes_in_group("stations"):
-		if node is RepairTableStation or node is WorkbenchStation:
-			register_workbench(node as BaseStation)
-	for node in tree.get_nodes_in_group("workbenches"):
-		if node is BaseStation:
+		if node is WorkbenchStation:
 			register_workbench(node as BaseStation)
 	if _monitored_workbenches.is_empty():
 		var root_node: Node = get_parent() if get_parent() else tree.current_scene
 		if root_node:
 			var found = root_node.find_children("*", "BaseStation", true, false)
 			for child in found:
-				if child is RepairTableStation or child is WorkbenchStation:
+				if child is WorkbenchStation:
 					register_workbench(child as BaseStation)
 
 

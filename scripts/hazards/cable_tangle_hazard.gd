@@ -54,7 +54,9 @@ func cut_cables(player: PlayerCharacter = null) -> void:
 	SignalBus.hazard_wrong_choice.emit(hazard_name, "cut_cables")
 	if player and player.carry_system and player.carry_system.is_carrying():
 		var held: Carriable = player.carry_system.get_held_item()
-		if held is ToolItem:
-			(held as ToolItem).current_durability = 0
-			SignalBus.tool_broken.emit((held as ToolItem).tool_id)
+		if held and held.item_type == "tool":
+			if "current_durability" in held:
+				held.current_durability = 0
+			if "tool_id" in held:
+				SignalBus.tool_broken.emit(held.tool_id)
 	clear()

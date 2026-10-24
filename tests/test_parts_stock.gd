@@ -13,7 +13,6 @@ const DEAD_BATTERY_FAULT_PATH: String = "res://resources/faults/phone_dead_batte
 const PLAYER_SCENE_PATH: String = "res://scenes/characters/PlayerCharacter.tscn"
 const WORKSHOP_SCENE_PATH: String = "res://scenes/workshop/Workshop_Debug.tscn"
 const DELIVERY_BOX_SCENE_PATH: String = "res://scenes/tools/DeliveryBox.tscn"
-const SCREWDRIVER_SCENE_PATH: String = "res://scenes/tools/Screwdriver.tscn"
 
 
 func _ready() -> void:
@@ -172,7 +171,6 @@ func test_workbench_wrong_part_rejection() -> int:
 
 	var wb_scene: PackedScene = load(WORKBENCH_SCENE_PATH)
 	var wb: WorkbenchStation = wb_scene.instantiate() as WorkbenchStation
-	wb.requires_tool = false
 	add_child(wb)
 
 	var p_scene: PackedScene = load(PLAYER_SCENE_PATH)
@@ -203,7 +201,7 @@ func test_workbench_wrong_part_rejection() -> int:
 	err += _assert(not wb.can_player_interact(player), "Workbench rejects interaction with wrong part")
 
 	var prompt := wb.get_interaction_prompt(player)
-	err += _assert(prompt == "Wrong Replacement Part", "Prompt indicates Wrong Replacement Part: %s" % prompt)
+	err += _assert(prompt.contains("Wrong Part"), "Prompt indicates Wrong Replacement Part: %s" % prompt)
 
 	# Track hazard signal using Dictionary for mutable closure capture
 	var hazard_flags: Dictionary = {"wrong_part_emitted": false}
@@ -213,7 +211,7 @@ func test_workbench_wrong_part_rejection() -> int:
 	SignalBus.hazard_activated.connect(callable)
 
 	# Attempt to install wrong part
-	wb._on_interacted(player)
+	wb._try_install_part(player)
 
 	err += _assert(dev.current_repair_state == RepairState.State.DISASSEMBLED, "Device repair state remains DISASSEMBLED after wrong part")
 	err += _assert(player.carry_system.is_carrying(), "Wrong part was NOT consumed — still held by player")
@@ -235,7 +233,6 @@ func test_workbench_correct_part_installation() -> int:
 
 	var wb_scene: PackedScene = load(WORKBENCH_SCENE_PATH)
 	var wb: WorkbenchStation = wb_scene.instantiate() as WorkbenchStation
-	wb.requires_tool = false
 	add_child(wb)
 
 	var p_scene: PackedScene = load(PLAYER_SCENE_PATH)

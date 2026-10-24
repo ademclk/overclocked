@@ -39,15 +39,6 @@ var _unscrewed_indices: Array[int] = []
 @onready var device_title: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/DeviceTitle") as Label
 @onready var station_badge: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/StationBadge") as Label
 @onready var state_badge: Label = get_node_or_null("MarginContainer/VBoxContainer/Header/StateBadge") as Label
-@onready var fault_name_label: Label = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/FaultPanel/VBox/FaultName") as Label
-@onready var fault_desc_label: Label = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/FaultPanel/VBox/FaultDesc") as Label
-@onready var parts_container: VBoxContainer = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/PartsPanel/VBox/PartsList") as VBoxContainer
-@onready var roadmap_container: HBoxContainer = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/RoadmapPanel/RoadmapContainer") as HBoxContainer
-@onready var next_step_label: Label = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/NextStepPanel/NextStepLabel") as Label
-@onready var tool_status_label: Label = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox/ToolStatusLabel") as Label
-@onready var primary_action_btn: Button = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox/PrimaryActionButton") as Button
-@onready var pick_up_btn: Button = get_node_or_null("MarginContainer/VBoxContainer/Content/InfoSection/ActionPanel/VBox/PickUpButton") as Button
-
 # 3D Viewport References
 @onready var model_root: Node3D = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport/ModelRoot") as Node3D
 @onready var inspection_camera: Camera3D = get_node_or_null("MarginContainer/VBoxContainer/Content/3DSection/ViewportPanel/3DViewportContainer/SubViewport/Camera3D") as Camera3D
@@ -62,10 +53,6 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	if primary_action_btn:
-		primary_action_btn.pressed.connect(_on_primary_action_pressed)
-	if pick_up_btn:
-		pick_up_btn.pressed.connect(_trigger_pick_up)
 	if viewport_panel:
 		viewport_panel.gui_input.connect(_on_viewport_input)
 
@@ -135,8 +122,6 @@ func _refresh_all() -> void:
 		return
 	_populate_device_info()
 	_update_instruction_banner()
-	_build_roadmap()
-	_update_next_step()
 	_update_chassis_3d_state()
 	_build_hotspots()
 
@@ -342,7 +327,7 @@ func _build_hotspots() -> void:
 				_add_hotspot(defect_hs, false)
 
 			# Disassembly screw hotspots: ONLY on Workbench / Repair Table (or inspecting freely)
-			if station_type in ["workbench", "repair_table", ""]:
+			if station_type in ["workbench", ""]:
 				var screw_coords: Array[Vector3] = [
 					Vector3(-0.09, 0.02, -0.12),
 					Vector3(0.09, 0.02, -0.12),
@@ -394,7 +379,7 @@ func _build_hotspots() -> void:
 
 		"DISASSEMBLED":
 			# Component slots for missing replacement parts: ONLY on Workbench / Repair Table (or inspecting freely)
-			if station_type in ["workbench", "repair_table", ""]:
+			if station_type in ["workbench", ""]:
 				var missing: Array[ComponentData] = _current_device.get_missing_components()
 				var carried_part: Carriable = _get_carried_part()
 
@@ -424,7 +409,7 @@ func _build_hotspots() -> void:
 
 		"PART_REPLACED":
 			# Reassembly screw hotspots: ONLY on Workbench / Repair Table (or inspecting freely)
-			if station_type in ["workbench", "repair_table", ""]:
+			if station_type in ["workbench", ""]:
 				var hs = HotspotScript.new(
 					"reassemble",
 					"Fasten & Reassemble",
@@ -456,8 +441,6 @@ func _build_hotspots() -> void:
 			)
 			hs.glyph = "✅"
 			_add_hotspot(hs, false)
-
-	_update_action_button()
 
 
 func _add_hotspot(hs: Control, is_primary: bool = false) -> void:
@@ -492,10 +475,6 @@ func _get_component_slot_pos(comp_id: String, index: int) -> Vector3:
 		Vector3(0.0, 0.02, 0.05)
 	]
 	return offsets[index % offsets.size()]
-
-
-func _check_tool_available() -> bool:
-	return true
 
 
 func _on_screw_clicked(index: int) -> void:
@@ -542,14 +521,6 @@ func _trigger_diagnosis() -> void:
 func _trigger_disassembly() -> void:
 	if not _current_device:
 		return
-	if not _check_tool_available():
-		if tool_status_label:
-			tool_status_label.text = "⚠️ Screwdriver required to disassemble!"
-			tool_status_label.modulate = Color(1.0, 0.35, 0.3)
-		return
-
-	# Decrement tool durability if using bench tool or carried tool
-	_consume_tool_use()
 
 	if _current_station and _current_station.has_method("_start_disassembly"):
 		if _current_station.has_method("set_active_user"):
@@ -607,9 +578,9 @@ func _trigger_install_part(comp: ComponentData) -> void:
 			_current_device.install_part()
 		else:
 			SignalBus.hazard_activated.emit("Wrong Part", "wrong_part")
-			if tool_status_label:
-				tool_status_label.text = "⚠️ Wrong part for this device!"
-				tool_status_label.modulate = Color(1.0, 0.35, 0.3)
+			if instruction_label:
+				instruction_label.text = "⚠️ Bu cihaz için yanlış parça!"
+				instruction_label.modulate = Color(1.0, 0.35, 0.3)
 			return
 
 	action_performed.emit("install_part")
@@ -619,10 +590,6 @@ func _trigger_install_part(comp: ComponentData) -> void:
 func _trigger_reassembly() -> void:
 	if not _current_device:
 		return
-	if not _check_tool_available():
-		return
-
-	_consume_tool_use()
 
 	if _current_station and _current_station.has_method("_start_reassembly"):
 		_current_station._start_reassembly()
@@ -678,10 +645,6 @@ func _trigger_pick_up() -> void:
 	_owning_player.carry_system.pick_up(dev)
 
 
-func _consume_tool_use() -> void:
-	pass
-
-
 func _update_instruction_banner() -> void:
 	if not instruction_label or not is_instance_valid(instruction_label):
 		return
@@ -703,7 +666,7 @@ func _update_instruction_banner() -> void:
 				instruction_label.modulate = Color(1.0, 0.85, 0.3)
 
 		"DIAGNOSED":
-			if station_type in ["workbench", "repair_table", ""]:
+			if station_type in ["workbench", ""]:
 				var count: int = _unscrewed_indices.size()
 				instruction_label.text = "🪛 KASAYI AÇ: 4 vidayı sökün (%d/4) [Arıza: %s]" % [count, fault_name]
 				instruction_label.modulate = Color(1.0, 0.9, 0.35)
@@ -722,7 +685,7 @@ func _update_instruction_banner() -> void:
 			instruction_label.modulate = Color(0.4, 0.9, 0.5)
 
 		"PART_REPLACED":
-			if station_type in ["workbench", "repair_table", ""]:
+			if station_type in ["workbench", ""]:
 				instruction_label.text = "🔩 KASAYI KAPAT: Cihazı toplayıp vidaları sıkmak için simgeye tıklayın."
 				instruction_label.modulate = Color(0.5, 0.85, 1.0)
 			else:
@@ -796,127 +759,6 @@ func _populate_device_info() -> void:
 		var st_name: String = _current_station.station_name.to_upper() if _current_station else "INSPECT"
 		station_badge.text = "[ %s ]" % st_name
 
-	if fault_name_label:
-		if (_current_device.is_diagnosed or _current_device.current_repair_state != RepairState.State.RECEIVED) and _current_device.assigned_fault:
-			fault_name_label.text = "FAULT: %s" % _current_device.assigned_fault.fault_name.to_upper()
-			fault_name_label.modulate = Color(1.0, 0.4, 0.3)
-		else:
-			fault_name_label.text = "FAULT: UNKNOWN (NEEDS DIAGNOSIS)"
-			fault_name_label.modulate = Color(0.7, 0.7, 0.7)
-
-	if fault_desc_label:
-		if (_current_device.is_diagnosed or _current_device.current_repair_state != RepairState.State.RECEIVED) and _current_device.assigned_fault:
-			var desc: String = ""
-			if "symptom_description" in _current_device.assigned_fault:
-				desc = _current_device.assigned_fault.symptom_description
-			elif "description" in _current_device.assigned_fault:
-				desc = _current_device.assigned_fault.description
-			if desc.is_empty():
-				desc = "Hardware defect identified. Requires component replacement."
-			fault_desc_label.text = "Symptoms: %s" % desc
-		else:
-			fault_desc_label.text = "Symptoms: Run Diagnostic Scan to analyze defective components."
-
-	if parts_container:
-		for child in parts_container.get_children():
-			child.queue_free()
-
-		if (_current_device.is_diagnosed or _current_device.current_repair_state != RepairState.State.RECEIVED) and _current_device.assigned_fault:
-			var req: Array[ComponentData] = _current_device.assigned_fault.get_required_components()
-			var missing: Array[ComponentData] = _current_device.get_missing_components()
-			for comp in req:
-				if comp:
-					var is_installed: bool = not missing.any(func(m: ComponentData) -> bool: return m != null and m.component_id == comp.component_id)
-					var p_lbl := Label.new()
-					p_lbl.text = " %s  %s" % ["✓" if is_installed else "❌", comp.component_name]
-					p_lbl.add_theme_font_size_override("font_size", 14)
-					p_lbl.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4) if is_installed else Color(1.0, 0.45, 0.35))
-					parts_container.add_child(p_lbl)
-		else:
-			var unk := Label.new()
-			unk.text = "  ○ Components pending diagnostic analysis"
-			unk.add_theme_font_size_override("font_size", 13)
-			unk.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
-			parts_container.add_child(unk)
-
-	# Update tool status label
-	if tool_status_label:
-		var has_tool := _check_tool_available()
-		if has_tool:
-			tool_status_label.text = "🔧 Screwdriver: Ready ✓"
-			tool_status_label.modulate = Color(0.4, 0.9, 0.5)
-		else:
-			tool_status_label.text = "⚠️ Screwdriver: Not present"
-			tool_status_label.modulate = Color(0.9, 0.65, 0.3)
-
-
-func _build_roadmap() -> void:
-	if not roadmap_container or not _current_device:
-		return
-
-	for child in roadmap_container.get_children():
-		child.queue_free()
-
-	var states: Array[String] = [
-		"RECEIVED", "DIAGNOSED", "DISASSEMBLED",
-		"PART_REPLACED", "REASSEMBLED", "TESTED", "DELIVERED"
-	]
-
-	var active_states: Array[String] = []
-	for st in states:
-		if _current_device.assigned_fault and _current_device.assigned_fault.skip_states.has(st):
-			continue
-		active_states.append(st)
-
-	var current: String = str(_current_device.get_repair_state())
-	var current_idx: int = active_states.find(current)
-
-	for i in range(active_states.size()):
-		var st_name: String = active_states[i]
-		var is_past: bool = (i < current_idx)
-		var is_current: bool = (i == current_idx)
-
-		var node := Label.new()
-		var prefix := "✓ " if is_past else ("● " if is_current else "○ ")
-		node.text = prefix + st_name.replace("_", " ").capitalize()
-		node.add_theme_font_size_override("font_size", 13)
-
-		if is_current:
-			node.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-		elif is_past:
-			node.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4))
-		else:
-			node.add_theme_color_override("font_color", Color(0.45, 0.45, 0.5))
-
-		roadmap_container.add_child(node)
-
-		if i < active_states.size() - 1:
-			var arrow := Label.new()
-			arrow.text = " → "
-			arrow.add_theme_font_size_override("font_size", 12)
-			arrow.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45))
-			roadmap_container.add_child(arrow)
-
-
-func _update_next_step() -> void:
-	if next_step_label and _current_device:
-		next_step_label.text = "💡 NEXT STEP: %s" % get_next_step_hint(_current_device)
-
-
-func _update_action_button() -> void:
-	if not primary_action_btn:
-		return
-
-	if _primary_hotspot and is_instance_valid(_primary_hotspot):
-		primary_action_btn.visible = true
-		primary_action_btn.text = "[E] %s" % _primary_hotspot.action_label.to_upper()
-		primary_action_btn.disabled = not _primary_hotspot.is_enabled
-	else:
-		primary_action_btn.visible = false
-
-	if pick_up_btn and _owning_player and _owning_player.carry_system:
-		pick_up_btn.visible = _owning_player.carry_system.can_pick_up()
-
 
 static func get_next_step_hint(device: Device) -> String:
 	if not device:
@@ -928,18 +770,18 @@ static func get_next_step_hint(device: Device) -> String:
 		"DIAGNOSED":
 			if device.assigned_fault and device.assigned_fault.skip_states.has("DISASSEMBLED"):
 				return "This device needs software only. Take it to the Software Station."
-			return "Take this device to the Workbench (Repair Table) and disassemble it."
+			return "Take this device to the Workbench and disassemble it."
 		"DISASSEMBLED":
 			var missing := device.get_missing_components()
 			if missing.is_empty():
-				return "All parts installed. Reassemble the device at the Workbench (Repair Table)."
+				return "All parts installed. Reassemble the device at the Workbench."
 			var names: PackedStringArray = []
 			for m in missing:
 				if m:
 					names.append(m.component_name)
 			return "Get these parts from the Parts Shelf: %s" % ", ".join(names)
 		"PART_REPLACED":
-			return "Reassemble the device at the Workbench (Repair Table)."
+			return "Reassemble the device at the Workbench."
 		"REASSEMBLED":
 			return "Take to the Software Station to reinstall OS and run diagnostic tests."
 		"TESTED":

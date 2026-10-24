@@ -35,7 +35,7 @@ func can_player_interact(player: PlayerCharacter) -> bool:
 		return false
 
 	# Tools and devices are never allowed to be thrown into the trash
-	if held is ToolItem or held is Device or held.item_type == "device":
+	if held.item_type == "tool" or held is Device or held.item_type == "device":
 		return false
 
 	return true
@@ -52,7 +52,7 @@ func get_interaction_prompt(player: PlayerCharacter) -> String:
 	if not held:
 		return ""
 
-	if held is ToolItem:
+	if held.item_type == "tool":
 		return "Cannot trash tools!"
 	if held is Device or held.item_type == "device":
 		return "Cannot trash customer devices!"
@@ -77,7 +77,7 @@ func dispose_item(player: PlayerCharacter) -> bool:
 	if not held:
 		return false
 
-	if held is ToolItem or held is Device or held.item_type == "device":
+	if held.item_type == "tool" or held is Device or held.item_type == "device":
 		return false
 
 	var item_name: String = held.item_name

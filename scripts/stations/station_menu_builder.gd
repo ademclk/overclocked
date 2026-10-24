@@ -8,9 +8,7 @@ static func build_menu(station: BaseStation, player: PlayerCharacter) -> Array[I
 	if not station or not player:
 		return []
 
-	if station is RepairTableStation:
-		return _build_repair_table_menu(station as RepairTableStation, player)
-	elif station is WorkbenchStation:
+	if station is WorkbenchStation:
 		return _build_workbench_menu(station as WorkbenchStation, player)
 	elif station is DiagnosticBench:
 		return _build_diagnostic_menu(station as DiagnosticBench, player)
@@ -67,37 +65,6 @@ static func _build_workbench_menu(wb: WorkbenchStation, player: PlayerCharacter)
 					func() -> void: _trigger_device_examination(player, dev, wb)
 				)
 				options.append(examine_held)
-			elif held is ToolItem:
-				if wb.get_bench_tool() == null:
-					var place_tool := InteractionMenuOption.new(
-						"place_tool",
-						"Place %s on Bench" % held.item_name,
-						"Leave the tool on the workbench for later use.",
-						func() -> void: wb._try_place_tool(player),
-						true
-					)
-					options.append(place_tool)
-				else:
-					var drop_tool := InteractionMenuOption.new(
-						"drop_tool",
-						"Drop %s to Ground" % held.item_name,
-						"Place the tool on the floor so your hands are free.",
-						func() -> void: player.carry_system.drop_item(),
-						true
-					)
-					options.append(drop_tool)
-		elif wb.get_bench_tool() != null:
-			var tool: ToolItem = wb.get_bench_tool()
-			var pickup_tool := InteractionMenuOption.new(
-				"pick_up_tool",
-				"Pick Up %s" % tool.tool_display_name,
-				"Pick up the tool from the workbench.",
-				func() -> void: wb._try_pick_up_tool(player),
-				carry != null and carry.can_pick_up()
-			)
-			if not pickup_tool.is_enabled:
-				pickup_tool.disabled_reason = "Hands full"
-			options.append(pickup_tool)
 	else:
 		# Bench has a device
 		var dev: Device = wb.placed_device as Device if wb.placed_device is Device else null
@@ -194,231 +161,6 @@ static func _build_workbench_menu(wb: WorkbenchStation, player: PlayerCharacter)
 		if not can_pick:
 			pickup.disabled_reason = "Hands full"
 		options.append(pickup)
-
-	options.append(_create_cancel_option())
-	return options
-
-
-static func _build_repair_table_menu(table: RepairTableStation, player: PlayerCharacter) -> Array[InteractionMenuOption]:
-	var options: Array[InteractionMenuOption] = []
-	var carry: CarrySystem = player.carry_system
-	var has_device_on_table: bool = table.placed_device != null
-
-	if not has_device_on_table:
-		if carry and carry.is_carrying():
-			var held: Carriable = carry.get_held_item()
-			if held is Device:
-				var dev: Device = held as Device
-				var can_place: bool = table._can_accept_repair_item(held)
-				var place_opt := InteractionMenuOption.new(
-					"place_device",
-					"Place %s on Repair Table" % held.item_name,
-					"Set down the %s for repair work." % held.item_name,
-					func() -> void: table._on_interacted(player),
-					can_place
-				)
-				if not can_place:
-					if dev.current_repair_state == RepairState.State.RECEIVED:
-						place_opt.disabled_reason = "Must be diagnosed at Diagnostic Bench first"
-					elif dev.current_repair_state == RepairState.State.REASSEMBLED:
-						place_opt.disabled_reason = "Hardware repair complete - take to Software Station"
-					elif dev.current_repair_state == RepairState.State.TESTED:
-						place_opt.disabled_reason = "Device tested - take to Delivery Counter"
-					elif dev.assigned_fault and dev.assigned_fault.skip_states.has("DISASSEMBLED"):
-						place_opt.disabled_reason = "No hardware repair needed (software only)"
-					else:
-						place_opt.disabled_reason = "Cannot repair at this table"
-				options.append(place_opt)
-
-				# Examine held device
-				var examine_held := InteractionMenuOption.new(
-					"examine",
-					"Examine %s" % held.item_name,
-					_build_device_description(dev),
-					func() -> void: _trigger_device_examination(player, dev, table)
-				)
-				options.append(examine_held)
-			elif held is ToolItem:
-				if table.get_bench_tool() == null:
-					var place_tool := InteractionMenuOption.new(
-						"place_tool",
-						"Place %s on Repair Table" % held.item_name,
-						"Leave the tool on the repair table for later use.",
-						func() -> void: table._try_place_tool(player),
-						true
-					)
-					options.append(place_tool)
-				else:
-					var drop_tool := InteractionMenuOption.new(
-						"drop_tool",
-						"Drop %s to Ground" % held.item_name,
-						"Place the tool on the floor so your hands are free.",
-						func() -> void: player.carry_system.drop_item(),
-						true
-					)
-					options.append(drop_tool)
-		elif table.get_bench_tool() != null:
-			var tool: ToolItem = table.get_bench_tool()
-			var pickup_tool := InteractionMenuOption.new(
-				"pick_up_tool",
-				"Pick Up %s" % tool.tool_display_name,
-				"Pick up the tool from the repair table.",
-				func() -> void: table._try_pick_up_tool(player),
-				carry != null and carry.can_pick_up()
-			)
-			if not pickup_tool.is_enabled:
-				pickup_tool.disabled_reason = "Hands full"
-			options.append(pickup_tool)
-	else:
-		# Table has a device
-		var dev: Device = table.placed_device as Device if table.placed_device is Device else null
-		if dev:
-			var examine_opt := InteractionMenuOption.new(
-				"examine",
-				"Examine Device",
-				_build_device_description(dev),
-				func() -> void: _trigger_device_examination(player, dev, table)
-			)
-			options.append(examine_opt)
-
-			var r_state: String = str(dev.get_repair_state())
-			match r_state:
-				"DIAGNOSED":
-					var has_tool: bool = true
-					var disasm := InteractionMenuOption.new(
-						"disassemble",
-						"Disassemble Device",
-						"Open the device to access internal components.",
-						func() -> void:
-							table.set_active_user(player)
-							var hud := player.get_tree().get_first_node_in_group("hud") if (player and player.is_inside_tree()) else null
-							if hud and not hud.is_queued_for_deletion() and hud.has_method("start_repair_minigame"):
-								hud.start_repair_minigame(player, dev, "screw", func() -> void:
-									var tool: ToolItem = table.get_bench_tool()
-									if not tool and player and player.carry_system and player.carry_system.is_carrying():
-										var held: Carriable = player.carry_system.get_held_item()
-										if held is ToolItem: tool = held as ToolItem
-									if tool: tool.use_tool()
-									table._start_disassembly()
-									table._complete_processing()
-								)
-							else:
-								table._start_disassembly(),
-						has_tool
-					)
-					if not has_tool:
-						disasm.disabled_reason = "Needs %s" % table.required_tool_name
-					options.append(disasm)
-
-				"DISASSEMBLED":
-					if carry and carry.is_carrying():
-						var held: Carriable = carry.get_held_item()
-						if held and held.item_type == "part":
-							var is_valid_part: bool = table._is_valid_replacement_part(dev, held)
-							var install := InteractionMenuOption.new(
-								"install_part",
-								"Install %s" % held.item_name,
-								"Install this component into the device.",
-								func() -> void: table._try_install_part(player),
-								is_valid_part
-							)
-							if not is_valid_part:
-								install.disabled_reason = "Wrong part for this device"
-							options.append(install)
-
-					if dev.assigned_fault and dev.assigned_fault.is_multi_fault:
-						var missing: Array[ComponentData] = dev.get_missing_components()
-						if not missing.is_empty():
-							var names: PackedStringArray = []
-							for m in missing:
-								if m:
-									names.append(m.component_name)
-							var info := InteractionMenuOption.new(
-								"missing_parts_info",
-								"Needed: %s" % ", ".join(names),
-								"These components still need to be installed before reassembly.",
-								Callable(),
-								false
-							)
-							info.disabled_reason = "Info only"
-							options.append(info)
-
-				"PART_REPLACED":
-					var has_tool: bool = true
-					var reassem := InteractionMenuOption.new(
-						"reassemble",
-						"Reassemble Device",
-						"Close up the device. Component installation complete.",
-						func() -> void:
-							table.set_active_user(player)
-							var hud := player.get_tree().get_first_node_in_group("hud") if (player and player.is_inside_tree()) else null
-							if hud and not hud.is_queued_for_deletion() and hud.has_method("start_repair_minigame"):
-								hud.start_repair_minigame(player, dev, "screw", func() -> void:
-									var tool: ToolItem = table.get_bench_tool()
-									if not tool and player and player.carry_system and player.carry_system.is_carrying():
-										var held: Carriable = player.carry_system.get_held_item()
-										if held is ToolItem: tool = held as ToolItem
-									if tool: tool.use_tool()
-									table._start_reassembly()
-									table._complete_processing()
-								)
-							else:
-								table._start_reassembly(),
-						has_tool
-					)
-					if not has_tool:
-						reassem.disabled_reason = "Needs %s" % table.required_tool_name
-					options.append(reassem)
-
-			if carry and carry.is_carrying():
-				var held: Carriable = carry.get_held_item()
-				if held is ToolItem:
-					if table.get_bench_tool() == null:
-						var stow_tool := InteractionMenuOption.new(
-							"place_tool",
-							"Place %s on Repair Table" % held.item_name,
-							"Leave the tool on the table so your hands are free.",
-							func() -> void: table._try_place_tool(player),
-							true
-						)
-						options.append(stow_tool)
-					else:
-						var drop_tool := InteractionMenuOption.new(
-							"drop_tool",
-							"Drop %s to Ground" % held.item_name,
-							"Place the tool on the floor so your hands are free.",
-							func() -> void: player.carry_system.drop_item(),
-							true
-						)
-						options.append(drop_tool)
-
-			var is_holding_tool: bool = carry != null and carry.is_carrying() and carry.get_held_item() is ToolItem
-			var can_pick: bool = carry != null and (carry.can_pick_up() or is_holding_tool)
-			var pickup_label: String = "Pick Up Device" if not is_holding_tool else "Pick Up Device (Stow Tool)"
-			var pickup := InteractionMenuOption.new(
-				"pick_up",
-				pickup_label,
-				"Remove the device from the repair table.",
-				func() -> void: table._try_pick_up(player),
-				can_pick
-			)
-			if not can_pick:
-				pickup.disabled_reason = "Hands full"
-			options.append(pickup)
-		else:
-			var is_holding_tool: bool = carry != null and carry.is_carrying() and carry.get_held_item() is ToolItem
-			var can_pick: bool = carry != null and (carry.can_pick_up() or is_holding_tool)
-			var pickup_label: String = "Pick Up Item" if not is_holding_tool else "Pick Up Item (Stow Tool)"
-			var pickup := InteractionMenuOption.new(
-				"pick_up",
-				pickup_label,
-				"Remove the item from the repair table.",
-				func() -> void: table._try_pick_up(player),
-				can_pick
-			)
-			if not can_pick:
-				pickup.disabled_reason = "Hands full"
-			options.append(pickup)
 
 	options.append(_create_cancel_option())
 	return options
@@ -603,12 +345,10 @@ static func _build_software_menu(soft: SoftwareStation, player: PlayerCharacter)
 			options.append(examine_opt)
 
 		if soft.current_state == BaseStation.StationState.COMPLETE:
-			var is_holding_tool: bool = carry != null and carry.is_carrying() and carry.get_held_item() is ToolItem
-			var can_pick: bool = carry != null and (carry.can_pick_up() or is_holding_tool)
-			var pickup_label: String = "Pick Up Tested Device" if not is_holding_tool else "Pick Up Tested Device (Drop Tool)"
+			var can_pick: bool = carry != null and carry.can_pick_up()
 			var pickup := InteractionMenuOption.new(
 				"pick_up",
-				pickup_label,
+				"Pick Up Tested Device",
 				"Remove tested device and deliver to counter.",
 				func() -> void: soft._on_interacted(player),
 				can_pick
@@ -701,7 +441,7 @@ static func _build_trash_menu(trash: BaseStation, player: PlayerCharacter) -> Ar
 
 	if carry and carry.is_carrying():
 		var held: Carriable = carry.get_held_item()
-		if held is ToolItem:
+		if held.item_type == "tool":
 			var opt := InteractionMenuOption.new(
 				"trash_tool_blocked",
 				"Cannot Trash Tool",
